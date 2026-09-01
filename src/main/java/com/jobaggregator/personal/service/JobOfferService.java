@@ -19,7 +19,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -33,6 +32,8 @@ public class JobOfferService {
             JobStatus status,
             String keyword,
             String technology,
+            Boolean isRemote,
+            String location,
             int page,
             int size
     ) {
@@ -62,11 +63,27 @@ public class JobOfferService {
                 predicates.add(cb.equal(cb.lower(techJoin), technology.trim().toLowerCase()));
             }
 
+            if (isRemote != null) {
+                predicates.add(cb.equal(root.get("isRemote"), isRemote));
+            }
+
+            if (location != null && !location.trim().isEmpty()) {
+                String locPattern = "%" + location.trim().toLowerCase() + "%";
+                predicates.add(cb.like(cb.lower(root.get("location")), locPattern));
+            }
+
             query.distinct(true);
             return cb.and(predicates.toArray(new Predicate[0]));
         };
 
         return jobOfferRepository.findAll(spec, pageable).map(JobOfferResponseDto::fromEntity);
+    }
+
+    @Transactional(readOnly = true)
+    public JobOfferResponseDto getOfferById(Long id) {
+        JobOffer offer = jobOfferRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("No se encontró la oferta con id: " + id));
+        return JobOfferResponseDto.fromEntity(offer);
     }
 
     @Transactional

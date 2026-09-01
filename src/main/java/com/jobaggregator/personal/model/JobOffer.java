@@ -42,6 +42,9 @@ public class JobOffer {
     @Column(name = "short_description", columnDefinition = "TEXT")
     private String shortDescription;
 
+    @Column(name = "full_description", columnDefinition = "TEXT")
+    private String fullDescription;
+
     @Column(nullable = false, unique = true, length = 1000)
     private String url;
 

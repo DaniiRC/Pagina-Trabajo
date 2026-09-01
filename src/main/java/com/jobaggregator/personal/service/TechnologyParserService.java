@@ -103,24 +103,69 @@ public class TechnologyParserService {
     }
 
     public String cleanHtmlDescription(String rawHtml) {
+        String fullClean = cleanFullDescription(rawHtml);
+        if (fullClean.length() > 350) {
+            return fullClean.substring(0, 347) + "...";
+        }
+        return fullClean;
+    }
+
+    public String cleanFullDescription(String rawHtml) {
         if (rawHtml == null || rawHtml.isBlank()) return "";
-        // Remove HTML tags and convert special entities
-        String text = rawHtml
-                .replaceAll("<[^>]*>", " ")
-                .replaceAll("&nbsp;", " ")
+
+        String text = rawHtml;
+
+        // Pass 1: Replace HTML block breakers with newlines
+        text = text.replaceAll("(?i)<br\\s*/?>", "\n")
+                   .replaceAll("(?i)</p>", "\n\n")
+                   .replaceAll("(?i)</li>", "\n")
+                   .replaceAll("(?i)</div>", "\n")
+                   .replaceAll("(?i)</tr>", "\n")
+                   .replaceAll("(?i)<li>", " • ");
+
+        // Pass 2: Decode common HTML entities (including double-escaped ones)
+        text = decodeHtmlEntities(text);
+
+        // Pass 3: Strip any remaining HTML tags
+        text = text.replaceAll("<[^>]*>", " ");
+
+        // Pass 4: In case there were double encoded tags (&lt;p&gt;)
+        text = decodeHtmlEntities(text);
+        text = text.replaceAll("<[^>]*>", " ");
+
+        // Pass 5: Clean extra whitespace while preserving natural paragraph breaks
+        String[] lines = text.split("\n");
+        StringBuilder sb = new StringBuilder();
+        for (String line : lines) {
+            String trimmed = line.replaceAll("[ \\t\\r\\f]+", " ").trim();
+            if (!trimmed.isEmpty()) {
+                sb.append(trimmed).append("\n\n");
+            }
+        }
+
+        return sb.toString().trim();
+    }
+
+    private String decodeHtmlEntities(String input) {
+        if (input == null) return "";
+        return input
                 .replaceAll("&amp;", "&")
                 .replaceAll("&lt;", "<")
                 .replaceAll("&gt;", ">")
                 .replaceAll("&quot;", "\"")
                 .replaceAll("&#39;", "'")
-                .replaceAll("\\s+", " ")
-                .trim();
-
-        // Limit short description length for clean storage and display
-        if (text.length() > 600) {
-            return text.substring(0, 597) + "...";
-        }
-        return text;
+                .replaceAll("&rsquo;", "'")
+                .replaceAll("&lsquo;", "'")
+                .replaceAll("&rdquo;", "\"")
+                .replaceAll("&ldquo;", "\"")
+                .replaceAll("&bull;", "•")
+                .replaceAll("&middot;", "•")
+                .replaceAll("&ndash;", "-")
+                .replaceAll("&mdash;", "—")
+                .replaceAll("&nbsp;", " ")
+                .replaceAll("&trade;", "™")
+                .replaceAll("&copy;", "©")
+                .replaceAll("&reg;", "®");
     }
 
     private String capitalize(String str) {

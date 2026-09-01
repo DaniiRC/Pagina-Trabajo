@@ -23,11 +23,19 @@ public class JobOfferController {
             @RequestParam(required = false) JobStatus status,
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) String tech,
+            @RequestParam(required = false) Boolean isRemote,
+            @RequestParam(required = false) String location,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size
     ) {
-        Page<JobOfferResponseDto> offers = jobOfferService.getOffers(status, keyword, tech, page, size);
+        Page<JobOfferResponseDto> offers = jobOfferService.getOffers(status, keyword, tech, isRemote, location, page, size);
         return ResponseEntity.ok(offers);
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<JobOfferResponseDto> getJobById(@PathVariable Long id) {
+        JobOfferResponseDto offer = jobOfferService.getOfferById(id);
+        return ResponseEntity.ok(offer);
     }
 
     @PatchMapping("/{id}/status")

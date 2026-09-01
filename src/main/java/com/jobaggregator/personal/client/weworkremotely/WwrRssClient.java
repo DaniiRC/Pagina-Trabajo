@@ -117,6 +117,7 @@ public class WwrRssClient implements JobIngestionClient {
 
         String rawDescription = entry.getDescription() != null ? entry.getDescription().getValue() : "";
         String cleanDescription = technologyParserService.cleanHtmlDescription(rawDescription);
+        String fullDescription = technologyParserService.cleanFullDescription(rawDescription);
 
         List<String> tags = new ArrayList<>();
         if (entry.getCategories() != null) {
@@ -139,6 +140,7 @@ public class WwrRssClient implements JobIngestionClient {
                 .title(title)
                 .companyName(company)
                 .shortDescription(cleanDescription)
+                .fullDescription(fullDescription)
                 .url(entry.getLink().trim())
                 .publishedDate(pubDate)
                 .requiredTechnologies(techs)

@@ -72,6 +72,7 @@ public class ArbeitnowClient implements JobIngestionClient {
 
     private JobOffer mapToJobOffer(ArbeitnowResponseDto.ArbeitnowJobItem item) {
         String cleanDescription = technologyParserService.cleanHtmlDescription(item.getDescription());
+        String fullDescription = technologyParserService.cleanFullDescription(item.getDescription());
         Set<String> techs = technologyParserService.extractTechnologies(
                 item.getTitle(),
                 cleanDescription,
@@ -85,6 +86,7 @@ public class ArbeitnowClient implements JobIngestionClient {
                 .title(item.getTitle() != null ? item.getTitle().trim() : "Oferta sin título")
                 .companyName(item.getCompanyName() != null ? item.getCompanyName().trim() : "Empresa confidencial")
                 .shortDescription(cleanDescription)
+                .fullDescription(fullDescription)
                 .url(item.getUrl().trim())
                 .publishedDate(pubDate)
                 .requiredTechnologies(techs)

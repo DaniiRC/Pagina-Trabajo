@@ -21,6 +21,7 @@ public class JobOfferResponseDto {
     private String title;
     private String companyName;
     private String shortDescription;
+    private String fullDescription;
     private String url;
     private LocalDateTime publishedDate;
     private Set<String> requiredTechnologies;
@@ -38,6 +39,7 @@ public class JobOfferResponseDto {
                 .title(entity.getTitle())
                 .companyName(entity.getCompanyName())
                 .shortDescription(entity.getShortDescription())
+                .fullDescription(entity.getFullDescription() != null ? entity.getFullDescription() : entity.getShortDescription())
                 .url(entity.getUrl())
                 .publishedDate(entity.getPublishedDate())
                 .requiredTechnologies(entity.getRequiredTechnologies())
