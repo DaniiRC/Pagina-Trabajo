@@ -1,0 +1,108 @@
+package com.jobaggregator.personal.client.arbeitnow;
+
+import com.jobaggregator.personal.client.JobIngestionClient;
+import com.jobaggregator.personal.model.JobOffer;
+import com.jobaggregator.personal.model.JobSource;
+import com.jobaggregator.personal.model.JobStatus;
+import com.jobaggregator.personal.service.TechnologyParserService;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
+import org.springframework.web.client.RestClient;
+
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.util.*;
+
+@Component
+@RequiredArgsConstructor
+@Slf4j
+public class ArbeitnowClient implements JobIngestionClient {
+
+    private final RestClient restClient;
+    private final TechnologyParserService technologyParserService;
+
+    @Value("${jobs.arbeitnow.enabled:true}")
+    private boolean enabled;
+
+    private static final String API_URL = "https://www.arbeitnow.com/api/job-board-api";
+
+    @Override
+    public JobSource getSource() {
+        return JobSource.ARBEITNOW;
+    }
+
+    @Override
+    public List<JobOffer> fetchJobs() {
+        if (!enabled) {
+            log.info("Arbeitnow client is disabled in configuration.");
+            return Collections.emptyList();
+        }
+
+        List<JobOffer> results = new ArrayList<>();
+        try {
+            log.info("Fetching jobs from Arbeitnow API: {}", API_URL);
+
+            ArbeitnowResponseDto response = restClient.get()
+                    .uri(API_URL)
+                    .retrieve()
+                    .body(ArbeitnowResponseDto.class);
+
+            if (response != null && response.getData() != null) {
+                for (ArbeitnowResponseDto.ArbeitnowJobItem item : response.getData()) {
+                    if (item.getUrl() == null || item.getUrl().isBlank()) {
+                        continue;
+                    }
+
+                    JobOffer offer = mapToJobOffer(item);
+                    if (offer != null) {
+                        results.add(offer);
+                    }
+                }
+            }
+        } catch (Exception e) {
+            log.error("Error fetching jobs from Arbeitnow API: {}", e.getMessage());
+        }
+
+        log.info("Arbeitnow ingestion finished. Total items fetched: {}", results.size());
+        return results;
+    }
+
+    private JobOffer mapToJobOffer(ArbeitnowResponseDto.ArbeitnowJobItem item) {
+        String cleanDescription = technologyParserService.cleanHtmlDescription(item.getDescription());
+        Set<String> techs = technologyParserService.extractTechnologies(
+                item.getTitle(),
+                cleanDescription,
+                item.getTags()
+        );
+
+        LocalDateTime pubDate = parseTimestamp(item.getCreatedAt());
+
+        return JobOffer.builder()
+                .externalId(item.getSlug() != null ? item.getSlug() : UUID.randomUUID().toString())
+                .title(item.getTitle() != null ? item.getTitle().trim() : "Oferta sin título")
+                .companyName(item.getCompanyName() != null ? item.getCompanyName().trim() : "Empresa confidencial")
+                .shortDescription(cleanDescription)
+                .url(item.getUrl().trim())
+                .publishedDate(pubDate)
+                .requiredTechnologies(techs)
+                .status(JobStatus.NUEVA)
+                .source(JobSource.ARBEITNOW)
+                .isRemote(item.getRemote() != null ? item.getRemote() : true)
+                .location(item.getLocation() != null ? item.getLocation() : "Remote / Europe")
+                .build();
+    }
+
+    private LocalDateTime parseTimestamp(Long epochSeconds) {
+        if (epochSeconds == null || epochSeconds <= 0) {
+            return LocalDateTime.now();
+        }
+        try {
+            return LocalDateTime.ofInstant(Instant.ofEpochSecond(epochSeconds), ZoneId.systemDefault());
+        } catch (Exception e) {
+            return LocalDateTime.now();
+        }
+    }
+}

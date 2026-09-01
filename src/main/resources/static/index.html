@@ -1,0 +1,780 @@
+<!DOCTYPE html>
+<html lang="es" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TechJob Aggregator | Multiplataforma & Sistemas</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+                        display: ['Outfit', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#eef2ff',
+                            100: '#e0e7ff',
+                            500: '#6366f1',
+                            600: '#4f46e5',
+                            700: '#4338ca',
+                            900: '#312e81',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Custom scrollbar and smooth transitions */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0f172a;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #475569;
+        }
+        .glass-card {
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .glass-header {
+            background: rgba(10, 15, 30, 0.85);
+            backdrop-filter: blur(16px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col font-sans antialiased selection:bg-indigo-500 selection:text-white">
+
+    <!-- Toast Notification Container -->
+    <div id="toast-container" class="fixed bottom-6 right-6 z-50 flex flex-col gap-3 max-w-md w-full pointer-events-none"></div>
+
+    <!-- Top Navigation / Header -->
+    <header class="glass-header sticky top-0 z-40 px-4 lg:px-8 py-3.5 transition-all">
+        <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-4">
+            
+            <!-- Brand Logo & Title -->
+            <div class="flex items-center gap-3.5">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 via-indigo-500 to-emerald-400 p-0.5 shadow-lg shadow-indigo-500/20 flex items-center justify-center">
+                    <div class="w-full h-full bg-slate-950 rounded-[10px] flex items-center justify-center">
+                        <svg class="w-5 h-5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+                        </svg>
+                    </div>
+                </div>
+                <div>
+                    <div class="flex items-center gap-2">
+                        <h1 class="text-xl font-bold font-display tracking-tight text-white">TechJob <span class="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-emerald-400">Aggregator</span></h1>
+                        <span class="text-[10px] uppercase tracking-wider font-bold bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 px-2 py-0.5 rounded-full">DAM & SysAdmin</span>
+                    </div>
+                    <p class="text-xs text-slate-400 hidden sm:block">Recopilador automatizado vía APIs públicas y RSS</p>
+                </div>
+            </div>
+
+            <!-- Server Status & Action Controls -->
+            <div class="flex items-center gap-3">
+                <!-- Health Status Badge -->
+                <div id="server-status" class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-xs font-medium text-slate-300">
+                    <span class="relative flex h-2 w-2">
+                        <span id="status-ping-animate" class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                        <span id="status-ping-dot" class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                    </span>
+                    <span id="status-text">Conectado</span>
+                </div>
+
+                <!-- Sync Button -->
+                <button id="btn-sync" onclick="triggerSync()" class="relative inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-500 hover:to-indigo-600 text-white text-xs sm:text-sm font-semibold shadow-lg shadow-indigo-600/25 active:scale-95 transition-all duration-150 cursor-pointer">
+                    <svg id="sync-spinner" class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                    </svg>
+                    <span>Sincronizar Ofertas</span>
+                </button>
+            </div>
+
+        </div>
+    </header>
+
+    <!-- Main Content Container -->
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 lg:px-8 py-6 flex flex-col gap-6">
+
+        <!-- KPI Metrics Grid -->
+        <section class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5">
+            <!-- Total Card -->
+            <div onclick="selectStatusFilter(null)" class="cursor-pointer glass-card rounded-2xl p-4 hover:border-slate-700 transition-all hover:translate-y-[-2px] group">
+                <div class="flex items-center justify-between text-slate-400 mb-2">
+                    <span class="text-xs font-semibold uppercase tracking-wider">Total</span>
+                    <span class="text-xs text-slate-400 group-hover:text-white transition-colors">📊</span>
+                </div>
+                <div class="flex items-baseline gap-2">
+                    <span id="stat-total" class="text-2xl lg:text-3xl font-extrabold font-display text-white">0</span>
+                    <span class="text-[11px] text-slate-400">ofertas</span>
+                </div>
+            </div>
+
+            <!-- Nuevas Card -->
+            <div onclick="selectStatusFilter('NUEVA')" class="cursor-pointer glass-card rounded-2xl p-4 border-indigo-500/20 bg-indigo-950/20 hover:border-indigo-500/40 transition-all hover:translate-y-[-2px] group">
+                <div class="flex items-center justify-between text-indigo-300 mb-2">
+                    <span class="text-xs font-semibold uppercase tracking-wider">Nuevas</span>
+                    <span class="text-xs">✨</span>
+                </div>
+                <div class="flex items-baseline gap-2">
+                    <span id="stat-nuevas" class="text-2xl lg:text-3xl font-extrabold font-display text-indigo-400">0</span>
+                    <span class="text-[11px] text-indigo-300/70">sin revisar</span>
+                </div>
+            </div>
+
+            <!-- Vistas Card -->
+            <div onclick="selectStatusFilter('VISTA')" class="cursor-pointer glass-card rounded-2xl p-4 border-sky-500/20 bg-sky-950/20 hover:border-sky-500/40 transition-all hover:translate-y-[-2px] group">
+                <div class="flex items-center justify-between text-sky-300 mb-2">
+                    <span class="text-xs font-semibold uppercase tracking-wider">Vistas</span>
+                    <span class="text-xs">👁️</span>
+                </div>
+                <div class="flex items-baseline gap-2">
+                    <span id="stat-vistas" class="text-2xl lg:text-3xl font-extrabold font-display text-sky-400">0</span>
+                    <span class="text-[11px] text-sky-300/70">leídas</span>
+                </div>
+            </div>
+
+            <!-- Aplicadas Card -->
+            <div onclick="selectStatusFilter('APLICADA')" class="cursor-pointer glass-card rounded-2xl p-4 border-emerald-500/20 bg-emerald-950/20 hover:border-emerald-500/40 transition-all hover:translate-y-[-2px] group">
+                <div class="flex items-center justify-between text-emerald-300 mb-2">
+                    <span class="text-xs font-semibold uppercase tracking-wider">Aplicadas</span>
+                    <span class="text-xs">🚀</span>
+                </div>
+                <div class="flex items-baseline gap-2">
+                    <span id="stat-aplicadas" class="text-2xl lg:text-3xl font-extrabold font-display text-emerald-400">0</span>
+                    <span class="text-[11px] text-emerald-300/70">candidaturas</span>
+                </div>
+            </div>
+
+            <!-- Descartadas Card -->
+            <div onclick="selectStatusFilter('DESCARTADA')" class="cursor-pointer glass-card rounded-2xl p-4 border-rose-500/20 bg-rose-950/20 hover:border-rose-500/40 transition-all hover:translate-y-[-2px] group">
+                <div class="flex items-center justify-between text-rose-300 mb-2">
+                    <span class="text-xs font-semibold uppercase tracking-wider">Descartadas</span>
+                    <span class="text-xs">🗑️</span>
+                </div>
+                <div class="flex items-baseline gap-2">
+                    <span id="stat-descartadas" class="text-2xl lg:text-3xl font-extrabold font-display text-rose-400">0</span>
+                    <span class="text-[11px] text-rose-300/70">archivadas</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Search & Interactive Filters Bar -->
+        <section class="glass-card rounded-2xl p-5 flex flex-col gap-4">
+            
+            <!-- Upper Search Row -->
+            <div class="flex flex-col md:flex-row gap-3 items-stretch md:items-center justify-between">
+                
+                <!-- Keyword Search Input -->
+                <div class="relative flex-1">
+                    <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                        </svg>
+                    </div>
+                    <input 
+                        type="text" 
+                        id="search-input" 
+                        placeholder="Buscar por puesto, empresa o palabras clave (ej: Spring, Linux, Redes, Junior)..."
+                        class="w-full pl-10 pr-4 py-2.5 bg-slate-900 border border-slate-800 rounded-xl text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all"
+                        oninput="handleSearchInput(event)"
+                    />
+                </div>
+
+                <!-- Status Filter Tabs -->
+                <div class="flex items-center gap-1.5 p-1 bg-slate-900/90 border border-slate-800/80 rounded-xl overflow-x-auto text-xs font-medium scrollbar-none">
+                    <button onclick="selectStatusFilter(null)" id="tab-all" class="filter-tab px-3 py-1.5 rounded-lg text-slate-300 hover:text-white transition-all active-tab bg-indigo-600 text-white font-semibold">Todas</button>
+                    <button onclick="selectStatusFilter('NUEVA')" id="tab-NUEVA" class="filter-tab px-3 py-1.5 rounded-lg text-slate-300 hover:text-white transition-all">✨ Nuevas</button>
+                    <button onclick="selectStatusFilter('VISTA')" id="tab-VISTA" class="filter-tab px-3 py-1.5 rounded-lg text-slate-300 hover:text-white transition-all">👁️ Vistas</button>
+                    <button onclick="selectStatusFilter('APLICADA')" id="tab-APLICADA" class="filter-tab px-3 py-1.5 rounded-lg text-slate-300 hover:text-white transition-all">🚀 Aplicadas</button>
+                    <button onclick="selectStatusFilter('DESCARTADA')" id="tab-DESCARTADA" class="filter-tab px-3 py-1.5 rounded-lg text-slate-300 hover:text-white transition-all">🗑️ Descartadas</button>
+                </div>
+
+            </div>
+
+            <!-- Technology Filter Pills -->
+            <div class="flex flex-col gap-2 pt-2 border-t border-slate-800/60">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Filtrar por Tecnología / Perfil:</span>
+                    <button onclick="clearTechFilter()" id="btn-clear-tech" class="text-xs text-indigo-400 hover:text-indigo-300 transition-colors hidden">
+                        ✕ Quitar filtro de tecnología
+                    </button>
+                </div>
+                <div id="tech-pills" class="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto pr-1">
+                    <!-- Tech pills injected dynamically -->
+                </div>
+            </div>
+
+        </section>
+
+        <!-- Job Offers Listing Container -->
+        <section class="flex flex-col gap-4">
+            
+            <!-- Result Header & Active Filters Bar -->
+            <div class="flex items-center justify-between px-1">
+                <div class="flex items-center gap-2">
+                    <h2 class="text-base font-bold font-display text-white">Ofertas Disponibles</h2>
+                    <span id="results-count" class="text-xs font-semibold px-2 py-0.5 rounded-full bg-slate-800 text-slate-300">0 resultados</span>
+                </div>
+                <div id="active-filter-indicator" class="text-xs text-slate-400">
+                    <!-- Dynamic state description -->
+                </div>
+            </div>
+
+            <!-- Loading Spinner State -->
+            <div id="loading-state" class="hidden py-16 flex flex-col items-center justify-center gap-4 text-center">
+                <div class="w-10 h-10 border-4 border-indigo-500/20 border-t-indigo-500 rounded-full animate-spin"></div>
+                <p class="text-sm text-slate-400">Cargando ofertas de empleo...</p>
+            </div>
+
+            <!-- Empty State -->
+            <div id="empty-state" class="hidden py-16 glass-card rounded-2xl flex flex-col items-center justify-center gap-3 text-center px-4">
+                <div class="w-14 h-14 rounded-2xl bg-slate-900 border border-slate-800 flex items-center justify-center text-2xl">
+                    🔍
+                </div>
+                <h3 class="text-base font-bold text-white">No se encontraron ofertas</h3>
+                <p class="text-xs text-slate-400 max-w-md">No hay ofertas que coincidan con los filtros seleccionados o la base de datos aún no ha sincronizado. Prueba a reiniciar los filtros o pulsar en "Sincronizar Ofertas".</p>
+                <button onclick="resetAllFilters()" class="mt-2 text-xs font-semibold px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 transition-colors">
+                    Limpiar todos los filtros
+                </button>
+            </div>
+
+            <!-- Offers Grid -->
+            <div id="job-grid" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <!-- Job cards rendered here -->
+            </div>
+
+            <!-- Pagination Bar -->
+            <div id="pagination-container" class="flex items-center justify-between px-2 py-4 glass-card rounded-2xl mt-2">
+                <button 
+                    id="btn-prev-page" 
+                    onclick="changePage(-1)" 
+                    disabled 
+                    class="px-4 py-2 rounded-xl bg-slate-900 border border-slate-800 text-xs font-semibold text-slate-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-800 transition-all cursor-pointer"
+                >
+                    ← Anterior
+                </button>
+                <span id="page-info" class="text-xs font-medium text-slate-400">Página 1 de 1</span>
+                <button 
+                    id="btn-next-page" 
+                    onclick="changePage(1)" 
+                    disabled 
+                    class="px-4 py-2 rounded-xl bg-slate-900 border border-slate-800 text-xs font-semibold text-slate-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-800 transition-all cursor-pointer"
+                >
+                    Siguiente →
+                </button>
+            </div>
+
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="mt-auto border-t border-slate-900 py-5 px-4 text-center text-xs text-slate-500">
+        <p>TechJob Aggregator • Personal Job Board for Multiplatform Developers & SysAdmins • Spring Boot 3 + H2/PostgreSQL</p>
+    </footer>
+
+    <!-- JavaScript Application Logic -->
+    <script>
+        // State variables
+        let currentStatus = null;
+        let currentKeyword = '';
+        let currentTech = null;
+        let currentPage = 0;
+        const pageSize = 16;
+        let totalPages = 1;
+        let searchTimeout = null;
+
+        // Base API endpoints
+        const API_BASE = '/api';
+
+        // Predefined key tech tags for the quick filter cloud
+        const DEFAULT_POPULAR_TECHS = [
+            'Java', 'Spring Boot', 'Kotlin', 'Flutter', 'Swift', 'React Native',
+            'Linux', 'Docker', 'Kubernetes', 'AWS', 'Azure', 'Redes/Networking',
+            'DevOps', 'Sysadmin', 'SQL', 'PostgreSQL', 'Python', 'Node.js', 'TypeScript'
+        ];
+
+        // Initialization
+        document.addEventListener('DOMContentLoaded', () => {
+            renderTechPills(DEFAULT_POPULAR_TECHS);
+            checkHealth();
+            fetchStats();
+            fetchJobs();
+        });
+
+        // Health & ping check
+        async function checkHealth() {
+            try {
+                const res = await fetch(`${API_BASE}/health`);
+                if (res.ok) {
+                    const data = await res.json();
+                    document.getElementById('status-text').textContent = `Online (${data.profile})`;
+                    document.getElementById('status-ping-dot').className = "relative inline-flex rounded-full h-2 w-2 bg-emerald-500";
+                    document.getElementById('status-ping-animate').className = "animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75";
+                } else {
+                    throw new Error();
+                }
+            } catch (err) {
+                document.getElementById('status-text').textContent = "Desconectado";
+                document.getElementById('status-ping-dot').className = "relative inline-flex rounded-full h-2 w-2 bg-rose-500";
+                document.getElementById('status-ping-animate').className = "hidden";
+            }
+        }
+
+        // Fetch Stats
+        async function fetchStats() {
+            try {
+                const res = await fetch(`${API_BASE}/jobs/stats`);
+                if (res.ok) {
+                    const stats = await res.json();
+                    document.getElementById('stat-total').textContent = stats.total || 0;
+                    document.getElementById('stat-nuevas').textContent = stats.nuevas || 0;
+                    document.getElementById('stat-vistas').textContent = stats.vistas || 0;
+                    document.getElementById('stat-aplicadas').textContent = stats.aplicadas || 0;
+                    document.getElementById('stat-descartadas').textContent = stats.descartadas || 0;
+
+                    if (stats.availableTechnologies && stats.availableTechnologies.length > 0) {
+                        const merged = Array.from(new Set([...DEFAULT_POPULAR_TECHS, ...stats.availableTechnologies]));
+                        renderTechPills(merged);
+                    }
+                }
+            } catch (err) {
+                console.error("Error fetching stats:", err);
+            }
+        }
+
+        // Render Tech Pills
+        function renderTechPills(techList) {
+            const container = document.getElementById('tech-pills');
+            container.innerHTML = '';
+
+            techList.forEach(tech => {
+                const isSelected = currentTech && currentTech.toLowerCase() === tech.toLowerCase();
+                const pill = document.createElement('button');
+                pill.className = `px-2.5 py-1 rounded-lg text-xs font-medium transition-all cursor-pointer ${
+                    isSelected 
+                        ? 'bg-indigo-600 text-white font-semibold shadow-sm shadow-indigo-600/30' 
+                        : 'bg-slate-900/90 text-slate-300 hover:bg-slate-800 hover:text-white border border-slate-800'
+                }`;
+                pill.textContent = tech;
+                pill.onclick = () => selectTechFilter(tech);
+                container.appendChild(pill);
+            });
+        }
+
+        // Fetch Job Offers
+        async function fetchJobs() {
+            showLoading(true);
+            try {
+                let url = `${API_BASE}/jobs?page=${currentPage}&size=${pageSize}`;
+                if (currentStatus) url += `&status=${encodeURIComponent(currentStatus)}`;
+                if (currentKeyword) url += `&keyword=${encodeURIComponent(currentKeyword)}`;
+                if (currentTech) url += `&tech=${encodeURIComponent(currentTech)}`;
+
+                const res = await fetch(url);
+                if (!res.ok) throw new Error('Error al cargar ofertas');
+
+                const data = await res.json();
+                totalPages = data.totalPages || 1;
+                renderJobs(data.content || []);
+                updatePagination(data);
+            } catch (err) {
+                showToast("Error de conexión al cargar ofertas", "error");
+                renderJobs([]);
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        // Render Job Cards
+        function renderJobs(jobs) {
+            const grid = document.getElementById('job-grid');
+            const emptyState = document.getElementById('empty-state');
+            const resultsCount = document.getElementById('results-count');
+
+            resultsCount.textContent = `${jobs.length} ofertas`;
+
+            if (!jobs || jobs.length === 0) {
+                grid.innerHTML = '';
+                emptyState.classList.remove('hidden');
+                return;
+            }
+
+            emptyState.classList.add('hidden');
+            grid.innerHTML = jobs.map(job => createJobCardHtml(job)).join('');
+        }
+
+        // Create Job Card HTML template
+        function createJobCardHtml(job) {
+            const statusBadge = getStatusBadge(job.status);
+            const sourceBadge = getSourceBadge(job.source);
+            const formattedDate = formatRelativeDate(job.publishedDate);
+            
+            const techPills = (job.requiredTechnologies || []).slice(0, 7).map(t => 
+                `<span class="px-2 py-0.5 text-[11px] font-medium rounded-md bg-slate-900 text-indigo-300 border border-indigo-500/20">${escapeHtml(t)}</span>`
+            ).join('');
+
+            return `
+                <div class="glass-card rounded-2xl p-5 flex flex-col justify-between gap-4 transition-all duration-200 hover:border-indigo-500/30 hover:shadow-xl hover:shadow-indigo-500/5 group">
+                    
+                    <!-- Top Metadata Row -->
+                    <div class="flex flex-col gap-2">
+                        <div class="flex items-center justify-between gap-2 flex-wrap">
+                            <div class="flex items-center gap-2">
+                                ${sourceBadge}
+                                <span class="text-xs text-slate-400 flex items-center gap-1">
+                                    <svg class="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                    </svg>
+                                    ${formattedDate}
+                                </span>
+                            </div>
+                            <div class="flex items-center gap-1.5">
+                                ${statusBadge}
+                            </div>
+                        </div>
+
+                        <!-- Title & Company -->
+                        <div>
+                            <h3 class="text-base font-bold text-white group-hover:text-indigo-400 transition-colors leading-snug">
+                                ${escapeHtml(job.title)}
+                            </h3>
+                            <div class="flex items-center gap-2 mt-1 text-xs text-slate-400">
+                                <span class="font-semibold text-slate-300 flex items-center gap-1">
+                                    🏢 ${escapeHtml(job.companyName)}
+                                </span>
+                                <span>•</span>
+                                <span class="text-slate-400">📍 ${escapeHtml(job.location || 'Remoto')}</span>
+                            </div>
+                        </div>
+
+                        <!-- Description Snippet -->
+                        <p class="text-xs text-slate-400 line-clamp-3 leading-relaxed mt-1">
+                            ${escapeHtml(job.shortDescription || 'Sin descripción detallada.')}
+                        </p>
+
+                        <!-- Tech Tags -->
+                        <div class="flex flex-wrap gap-1.5 mt-2">
+                            ${techPills}
+                        </div>
+                    </div>
+
+                    <!-- Bottom Action Controls -->
+                    <div class="flex items-center justify-between gap-2 pt-3 border-t border-slate-800/80 flex-wrap">
+                        
+                        <!-- Open External Link (Auto-marks as VIEWED) -->
+                        <a 
+                            href="${escapeHtml(job.url)}" 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            onclick="handleOpenOffer(${job.id})"
+                            class="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 border border-indigo-500/30 transition-colors cursor-pointer"
+                        >
+                            <span>Abrir Oferta</span>
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
+                            </svg>
+                        </a>
+
+                        <!-- State Change Quick Actions -->
+                        <div class="flex items-center gap-1.5">
+                            ${job.status !== 'VISTA' ? `
+                                <button 
+                                    onclick="updateOfferStatus(${job.id}, 'VISTA')" 
+                                    title="Marcar como Vista"
+                                    class="p-1.5 rounded-lg bg-slate-900 hover:bg-sky-500/20 hover:text-sky-300 text-slate-400 border border-slate-800 transition-all cursor-pointer text-xs"
+                                >
+                                    👁️
+                                </button>
+                            ` : ''}
+                            
+                            ${job.status !== 'APLICADA' ? `
+                                <button 
+                                    onclick="updateOfferStatus(${job.id}, 'APLICADA')" 
+                                    title="Marcar como Aplicada"
+                                    class="px-2.5 py-1.5 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/30 font-semibold transition-all cursor-pointer text-xs flex items-center gap-1"
+                                >
+                                    🚀 <span>Aplicada</span>
+                                </button>
+                            ` : ''}
+
+                            ${job.status !== 'DESCARTADA' ? `
+                                <button 
+                                    onclick="updateOfferStatus(${job.id}, 'DESCARTADA')" 
+                                    title="Descartar"
+                                    class="p-1.5 rounded-lg bg-slate-900 hover:bg-rose-500/20 hover:text-rose-300 text-slate-400 border border-slate-800 transition-all cursor-pointer text-xs"
+                                >
+                                    🗑️
+                                </button>
+                            ` : `
+                                <button 
+                                    onclick="updateOfferStatus(${job.id}, 'NUEVA')" 
+                                    title="Restaurar a Nueva"
+                                    class="px-2 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs transition-all cursor-pointer"
+                                >
+                                    Restaurar
+                                </button>
+                            `}
+                        </div>
+
+                    </div>
+
+                </div>
+            `;
+        }
+
+        // Status Badge Helper
+        function getStatusBadge(status) {
+            switch(status) {
+                case 'NUEVA':
+                    return '<span class="text-[11px] font-bold px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">✨ NUEVA</span>';
+                case 'VISTA':
+                    return '<span class="text-[11px] font-bold px-2 py-0.5 rounded-full bg-sky-500/20 text-sky-300 border border-sky-500/30">👁️ VISTA</span>';
+                case 'APLICADA':
+                    return '<span class="text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">🚀 APLICADA</span>';
+                case 'DESCARTADA':
+                    return '<span class="text-[11px] font-bold px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/30">🗑️ DESCARTADA</span>';
+                default:
+                    return '';
+            }
+        }
+
+        // Source Badge Helper
+        function getSourceBadge(source) {
+            switch(source) {
+                case 'REMOTIVE':
+                    return '<span class="text-[10px] uppercase font-bold px-2 py-0.5 rounded-md bg-purple-950/60 text-purple-300 border border-purple-800/40">Remotive</span>';
+                case 'ARBEITNOW':
+                    return '<span class="text-[10px] uppercase font-bold px-2 py-0.5 rounded-md bg-amber-950/60 text-amber-300 border border-amber-800/40">Arbeitnow</span>';
+                case 'WEWORKREMOTELY':
+                    return '<span class="text-[10px] uppercase font-bold px-2 py-0.5 rounded-md bg-teal-950/60 text-teal-300 border border-teal-800/40">WWR RSS</span>';
+                default:
+                    return '<span class="text-[10px] uppercase font-bold px-2 py-0.5 rounded-md bg-slate-800 text-slate-400">Web</span>';
+            }
+        }
+
+        // Date Formatter
+        function formatRelativeDate(dateStr) {
+            if (!dateStr) return 'Reciente';
+            const date = new Date(dateStr);
+            const now = new Date();
+            const diffHours = Math.floor((now - date) / (1000 * 60 * 60));
+            
+            if (diffHours < 1) return 'Hace unos minutos';
+            if (diffHours < 24) return `Hace ${diffHours} h`;
+            const diffDays = Math.floor(diffHours / 24);
+            if (diffDays === 1) return 'Ayer';
+            if (diffDays < 30) return `Hace ${diffDays} días`;
+            return date.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
+        }
+
+        // Status update handler
+        async function updateOfferStatus(id, newStatus) {
+            try {
+                const res = await fetch(`${API_BASE}/jobs/${id}/status`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ status: newStatus })
+                });
+
+                if (res.ok) {
+                    showToast(`Oferta marcada como ${newStatus}`, "success");
+                    fetchStats();
+                    fetchJobs();
+                } else {
+                    throw new Error();
+                }
+            } catch (err) {
+                showToast("No se pudo actualizar el estado", "error");
+            }
+        }
+
+        // Auto mark as viewed when opening external link
+        async function handleOpenOffer(id) {
+            try {
+                await fetch(`${API_BASE}/jobs/${id}/view`, { method: 'POST' });
+                setTimeout(() => {
+                    fetchStats();
+                    fetchJobs();
+                }, 500);
+            } catch (err) {
+                console.error("Error auto-marking as viewed:", err);
+            }
+        }
+
+        // Trigger manual synchronization
+        async function triggerSync() {
+            const btn = document.getElementById('btn-sync');
+            const spinner = document.getElementById('sync-spinner');
+            btn.disabled = true;
+            spinner.classList.add('animate-spin');
+
+            showToast("Iniciando sincronización con APIs externas y RSS...", "info");
+
+            try {
+                const res = await fetch(`${API_BASE}/sync`, { method: 'POST' });
+                if (res.ok) {
+                    const result = await res.json();
+                    showToast(`Sincronización finalizada: ${result.newSaved} nuevas ofertas guardadas`, "success");
+                    fetchStats();
+                    fetchJobs();
+                } else {
+                    throw new Error();
+                }
+            } catch (err) {
+                showToast("Error durante la sincronización", "error");
+            } finally {
+                btn.disabled = false;
+                spinner.classList.remove('animate-spin');
+            }
+        }
+
+        // Search Input with Debounce
+        function handleSearchInput(e) {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                currentKeyword = e.target.value;
+                currentPage = 0;
+                fetchJobs();
+            }, 350);
+        }
+
+        // Filter Handlers
+        function selectStatusFilter(status) {
+            currentStatus = status;
+            currentPage = 0;
+
+            // Update Tab styles
+            document.querySelectorAll('.filter-tab').forEach(tab => {
+                tab.classList.remove('bg-indigo-600', 'text-white', 'font-semibold');
+                tab.classList.add('text-slate-300');
+            });
+
+            const activeTabId = status ? `tab-${status}` : 'tab-all';
+            const activeTab = document.getElementById(activeTabId);
+            if (activeTab) {
+                activeTab.classList.add('bg-indigo-600', 'text-white', 'font-semibold');
+                activeTab.classList.remove('text-slate-300');
+            }
+
+            fetchJobs();
+        }
+
+        function selectTechFilter(tech) {
+            if (currentTech && currentTech.toLowerCase() === tech.toLowerCase()) {
+                currentTech = null;
+            } else {
+                currentTech = tech;
+            }
+            currentPage = 0;
+            document.getElementById('btn-clear-tech').classList.toggle('hidden', !currentTech);
+            fetchStats();
+            fetchJobs();
+        }
+
+        function clearTechFilter() {
+            currentTech = null;
+            document.getElementById('btn-clear-tech').classList.add('hidden');
+            fetchStats();
+            fetchJobs();
+        }
+
+        function resetAllFilters() {
+            currentStatus = null;
+            currentKeyword = '';
+            currentTech = null;
+            currentPage = 0;
+            document.getElementById('search-input').value = '';
+            document.getElementById('btn-clear-tech').classList.add('hidden');
+            selectStatusFilter(null);
+        }
+
+        // Pagination
+        function changePage(delta) {
+            currentPage += delta;
+            fetchJobs();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function updatePagination(data) {
+            const prevBtn = document.getElementById('btn-prev-page');
+            const nextBtn = document.getElementById('btn-next-page');
+            const pageInfo = document.getElementById('page-info');
+
+            prevBtn.disabled = data.first;
+            nextBtn.disabled = data.last;
+            pageInfo.textContent = `Página ${(data.number || 0) + 1} de ${data.totalPages || 1}`;
+        }
+
+        function showLoading(show) {
+            document.getElementById('loading-state').classList.toggle('hidden', !show);
+            if (show) {
+                document.getElementById('job-grid').innerHTML = '';
+                document.getElementById('empty-state').classList.add('hidden');
+            }
+        }
+
+        // Toast notifications system
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            
+            let bgClass = "bg-slate-900 border-slate-700 text-slate-100";
+            let icon = "ℹ️";
+            if (type === 'success') {
+                bgClass = "bg-emerald-950/90 border-emerald-500/40 text-emerald-200";
+                icon = "✅";
+            } else if (type === 'error') {
+                bgClass = "bg-rose-950/90 border-rose-500/40 text-rose-200";
+                icon = "❌";
+            }
+
+            toast.className = `pointer-events-auto p-4 rounded-xl border shadow-xl flex items-center gap-3 text-xs sm:text-sm font-medium transition-all duration-300 transform translate-y-4 opacity-0 ${bgClass}`;
+            toast.innerHTML = `<span>${icon}</span><span class="flex-1">${escapeHtml(message)}</span>`;
+
+            container.appendChild(toast);
+
+            requestAnimationFrame(() => {
+                toast.classList.remove('translate-y-4', 'opacity-0');
+            });
+
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-x-6');
+                setTimeout(() => toast.remove(), 300);
+            }, 3500);
+        }
+
+        // Safe HTML escaper
+        function escapeHtml(text) {
+            if (!text) return '';
+            const map = {
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#039;'
+            };
+            return text.toString().replace(/[&<>"']/g, m => map[m]);
+        }
+    </script>
+</body>
+</html>

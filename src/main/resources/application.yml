@@ -1,0 +1,26 @@
+spring:
+  application:
+    name: personal-job-aggregator
+  profiles:
+    active: dev
+
+server:
+  port: ${PORT:8080}
+
+# Sincronización automática de ofertas (por defecto cada 4 horas: 0 0 */4 * * *)
+jobs:
+  sync:
+    cron: "${JOBS_SYNC_CRON:0 0 */4 * * *}"
+    enabled: true
+    remotive:
+      enabled: true
+      categories:
+        - "software-dev"
+        - "devops-sysadmin"
+    arbeitnow:
+      enabled: true
+    weworkremotely:
+      enabled: true
+      urls:
+        - "https://weworkremotely.com/categories/remote-programming-jobs.rss"
+        - "https://weworkremotely.com/categories/remote-devops-sysadmin-jobs.rss"
