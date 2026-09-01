@@ -3,12 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TechJob Portal | Agregador Profesional de Empleo Técnico</title>
-    <!-- Google Fonts -->
+    <title>TechJobs — Agregador de Empleo Técnico</title>
+    <meta name="description" content="Encuentra las mejores ofertas de empleo técnico en España y Europa, filtradas por tus estudios, modalidad y ubicación.">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <!-- Tailwind CSS CDN -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -16,974 +15,908 @@
             theme: {
                 extend: {
                     fontFamily: {
-                        sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
-                    },
-                    colors: {
-                        slate: {
-                            850: '#111827',
-                            900: '#0f172a',
-                            950: '#070b14',
-                        }
+                        sans: ['"Plus Jakarta Sans"', 'Inter', 'system-ui', 'sans-serif'],
                     }
                 }
             }
         }
     </script>
     <style>
-        ::-webkit-scrollbar {
-            width: 6px;
-            height: 6px;
+        * { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+        body { background-color: #08090d; }
+        
+        ::-webkit-scrollbar { width: 5px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #1e2030; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #2a2d3e; }
+
+        .surface { background: #0d0f18; border: 1px solid #1a1d2e; }
+        .surface-hover:hover { border-color: #252840; }
+
+        .skeleton { background: linear-gradient(90deg, #0d0f18 25%, #13162a 50%, #0d0f18 75%); background-size: 200% 100%; animation: shimmer 1.6s infinite; }
+        @keyframes shimmer { 0% { background-position: 200% center; } 100% { background-position: -200% center; } }
+        
+        .modal-backdrop { background: rgba(4, 5, 10, 0.82); backdrop-filter: blur(10px); }
+        
+        .tag-study {
+            cursor: pointer;
+            padding: 4px 10px;
+            font-size: 11px;
+            font-weight: 600;
+            border-radius: 6px;
+            border: 1px solid #1a1d2e;
+            background: #0d0f18;
+            color: #6b7280;
+            transition: all 0.15s ease;
+            user-select: none;
         }
-        ::-webkit-scrollbar-track {
-            background: #070b14;
+        .tag-study.active {
+            background: rgba(99,102,241,0.12);
+            border-color: rgba(99,102,241,0.4);
+            color: #a5b4fc;
         }
-        ::-webkit-scrollbar-thumb {
-            background: #1e293b;
-            border-radius: 3px;
+        .tag-study:hover:not(.active) { border-color: #252840; color: #9ca3af; }
+
+        .offer-card { transition: transform 0.15s ease, border-color 0.15s ease; }
+        .offer-card:hover { transform: translateY(-1px); border-color: #252840 !important; }
+
+        .toast-enter { animation: toast-in 0.25s ease; }
+        @keyframes toast-in { from { opacity:0; transform: translateY(8px); } to { opacity:1; transform: translateY(0); } }
+
+        select, input {
+            background-color: #080910 !important;
+            color: #e4e6f0 !important;
+            border-color: #1a1d2e !important;
         }
-        ::-webkit-scrollbar-thumb:hover {
-            background: #334155;
-        }
-        .card-pro {
-            background-color: #0d131f;
-            border: 1px solid #1e293b;
-        }
-        .card-pro:hover {
-            border-color: #334155;
-        }
-        .header-pro {
-            background-color: rgba(7, 11, 20, 0.92);
-            backdrop-filter: blur(12px);
-            border-bottom: 1px solid #1e293b;
-        }
-        .modal-overlay {
-            background-color: rgba(3, 6, 12, 0.78);
-            backdrop-filter: blur(8px);
-        }
+        select option { background-color: #0d0f18; color: #e4e6f0; }
+        select:focus, input:focus { outline: none; border-color: #3d4170 !important; box-shadow: 0 0 0 2px rgba(99,102,241,0.1); }
+
+        .modal-panel { transition: opacity 0.18s ease, transform 0.18s ease; }
+        .modal-panel.closed { opacity: 0; transform: translateY(10px) scale(0.98); pointer-events: none; }
+        .modal-panel.open { opacity: 1; transform: translateY(0) scale(1); }
     </style>
 </head>
-<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col font-sans text-sm antialiased">
+<body class="text-zinc-100 min-h-screen font-sans text-[13px]">
 
-    <!-- Toast Notification Container -->
-    <div id="toast-container" class="fixed bottom-6 right-6 z-50 flex flex-col gap-2 max-w-sm w-full pointer-events-none"></div>
+    <!-- Toast Container -->
+    <div id="toast-container" class="fixed bottom-5 right-5 z-[200] flex flex-col gap-2 w-[320px] pointer-events-none"></div>
 
     <!-- Detail Modal -->
-    <div id="detail-modal" class="fixed inset-0 z-50 modal-overlay hidden flex items-center justify-center p-4 sm:p-6 overflow-y-auto" onclick="handleBackdropClick(event)">
-        <div id="modal-container" class="card-pro max-w-3xl w-full rounded-2xl p-6 sm:p-8 flex flex-col max-h-[88vh] shadow-2xl border border-slate-700 transition-all duration-200 transform scale-95 opacity-0 my-auto">
+    <div id="modal" class="fixed inset-0 z-[100] modal-backdrop hidden items-center justify-center p-4 overflow-y-auto" onclick="handleBackdropClick(event)">
+        <div id="modal-panel" class="modal-panel closed surface max-w-2xl w-full rounded-2xl overflow-hidden shadow-2xl my-auto">
             
             <!-- Modal Header -->
-            <div class="flex items-start justify-between gap-4 pb-4 border-b border-slate-800">
-                <div class="flex flex-col gap-1.5">
-                    <div class="flex items-center gap-2 flex-wrap">
-                        <span id="modal-source-badge" class="px-2 py-0.5 text-xs font-medium rounded bg-slate-800 text-slate-300 border border-slate-700"></span>
-                        <span id="modal-match-badge" class="px-2 py-0.5 text-xs font-semibold rounded bg-emerald-950 text-emerald-300 border border-emerald-800"></span>
-                        <span id="modal-status-badge"></span>
+            <div class="px-6 py-5 border-b border-[#1a1d2e]">
+                <div class="flex items-start justify-between gap-4">
+                    <div class="flex flex-col gap-2 flex-1 min-w-0">
+                        <div class="flex items-center gap-2 flex-wrap">
+                            <span id="modal-source" class="px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded-md border"></span>
+                            <span id="modal-modality" class="px-2 py-0.5 text-[10px] font-semibold rounded-md border"></span>
+                            <span id="modal-match" class="px-2 py-0.5 text-[10px] font-bold rounded-md"></span>
+                        </div>
+                        <h2 id="modal-title" class="text-base font-bold text-white leading-snug"></h2>
+                        <div class="flex items-center gap-2 text-xs text-zinc-400 flex-wrap">
+                            <span id="modal-company" class="font-semibold text-zinc-200"></span>
+                            <span class="text-zinc-600">•</span>
+                            <span id="modal-location"></span>
+                            <span class="text-zinc-600">•</span>
+                            <span id="modal-date" class="text-zinc-500"></span>
+                        </div>
+                        <div id="modal-salary" class="hidden text-xs font-semibold text-emerald-400"></div>
                     </div>
-                    <h2 id="modal-title" class="text-lg sm:text-xl font-bold text-white leading-snug"></h2>
-                    <div class="flex items-center gap-3 text-xs text-slate-400 flex-wrap">
-                        <span id="modal-company" class="font-semibold text-slate-200"></span>
-                        <span>•</span>
-                        <span id="modal-location"></span>
-                        <span>•</span>
-                        <span id="modal-date"></span>
+                    <button onclick="closeModal()" class="p-1.5 rounded-lg hover:bg-[#1a1d2e] text-zinc-500 hover:text-zinc-300 transition-colors shrink-0">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Modal Body -->
+            <div class="px-6 py-5 flex flex-col gap-5 max-h-[60vh] overflow-y-auto">
+                <div>
+                    <p class="text-[10px] font-semibold uppercase tracking-widest text-zinc-500 mb-2">Tecnologías</p>
+                    <div id="modal-techs" class="flex flex-wrap gap-1.5"></div>
+                </div>
+                <div>
+                    <p class="text-[10px] font-semibold uppercase tracking-widest text-zinc-500 mb-2">Descripción</p>
+                    <div id="modal-desc" class="text-xs text-zinc-300 leading-relaxed whitespace-pre-line bg-[#080910] rounded-xl p-4 border border-[#1a1d2e]"></div>
+                </div>
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="px-6 py-4 border-t border-[#1a1d2e] flex items-center justify-between gap-3 flex-wrap bg-[#080910]">
+                <div class="flex items-center gap-2">
+                    <button onclick="modalAction('VISTA')" class="px-3 py-1.5 text-xs font-medium rounded-lg bg-[#0d0f18] hover:bg-[#13162a] text-zinc-300 border border-[#1a1d2e] transition-colors">Revisada</button>
+                    <button onclick="modalAction('APLICADA')" class="px-3.5 py-1.5 text-xs font-semibold rounded-lg bg-emerald-950/50 hover:bg-emerald-900/60 text-emerald-300 border border-emerald-800/50 transition-colors">Postulado</button>
+                    <button onclick="modalAction('DESCARTADA')" class="px-3 py-1.5 text-xs font-medium rounded-lg bg-[#0d0f18] hover:bg-rose-950/40 hover:text-rose-400 text-zinc-500 border border-[#1a1d2e] transition-colors">Descartar</button>
+                </div>
+                <a id="modal-link" href="#" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold transition-colors">
+                    Ver oferta completa
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- App Layout -->
+    <div class="flex flex-col min-h-screen">
+
+        <!-- Header -->
+        <header class="sticky top-0 z-40 border-b border-[#1a1d2e] bg-[#08090d]/90 backdrop-blur-md">
+            <div class="max-w-7xl mx-auto px-5 py-3 flex items-center justify-between gap-4">
+                <div class="flex items-center gap-3">
+                    <div class="w-7 h-7 rounded-lg bg-indigo-600 flex items-center justify-center text-white text-xs font-bold shadow-lg shadow-indigo-900/50">TJ</div>
+                    <span class="font-bold text-white text-sm tracking-tight">TechJobs</span>
+                    <span class="hidden sm:inline text-[11px] text-zinc-600 border border-[#1a1d2e] px-2 py-0.5 rounded-md">Agregador Técnico Español</span>
+                </div>
+                <div class="flex items-center gap-3">
+                    <div class="hidden md:flex items-center gap-1.5 text-[11px] text-zinc-500">
+                        <span id="server-dot" class="w-1.5 h-1.5 rounded-full bg-zinc-600"></span>
+                        <span id="server-status">Verificando...</span>
+                    </div>
+                    <button id="sync-btn" onclick="triggerSync()" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold transition-all">
+                        <svg id="sync-icon" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                        Sincronizar
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <div class="flex-1 max-w-7xl w-full mx-auto px-5 py-5 flex flex-col gap-4">
+
+            <!-- Filter Panel -->
+            <section class="surface rounded-xl p-4 flex flex-col gap-4">
+
+                <!-- Row 1: Studies Tags + Modality + Sync Status -->
+                <div class="flex flex-col sm:flex-row sm:items-center gap-3">
+                    
+                    <!-- Studies Tags -->
+                    <div class="flex flex-col gap-1.5 flex-1">
+                        <label class="text-[10px] font-semibold uppercase tracking-widest text-zinc-500">Mis Estudios / Perfil</label>
+                        <div class="flex flex-wrap gap-1.5" id="study-tags">
+                            <span class="tag-study active" data-study="DAM" onclick="toggleStudy(this)">DAM</span>
+                            <span class="tag-study" data-study="DAW" onclick="toggleStudy(this)">DAW</span>
+                            <span class="tag-study" data-study="ASIR" onclick="toggleStudy(this)">ASIR</span>
+                            <span class="tag-study" data-study="SMR" onclick="toggleStudy(this)">SMR</span>
+                            <span class="tag-study" data-study="GRADO_INFORMATICA" onclick="toggleStudy(this)">Grado</span>
+                            <span class="tag-study" data-study="INGENIERIA" onclick="toggleStudy(this)">Ingeniería</span>
+                            <span class="tag-study" data-study="DEVOPS" onclick="toggleStudy(this)">DevOps</span>
+                            <span class="tag-study" data-study="BOOTCAMP" onclick="toggleStudy(this)">Bootcamp</span>
+                        </div>
+                    </div>
+
+                    <!-- Modality -->
+                    <div class="flex flex-col gap-1.5 shrink-0">
+                        <label class="text-[10px] font-semibold uppercase tracking-widest text-zinc-500">Modalidad</label>
+                        <select id="filter-modality" onchange="applyFilters()" class="px-3 py-2 rounded-lg border text-xs font-medium cursor-pointer w-full sm:w-40">
+                            <option value="">Todas</option>
+                            <option value="REMOTO_100">100% Remoto</option>
+                            <option value="HIBRIDO">Híbrido</option>
+                            <option value="PRESENCIAL">Presencial</option>
+                        </select>
                     </div>
                 </div>
 
-                <button onclick="closeModal()" class="p-2 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-white transition-colors cursor-pointer shrink-0" title="Cerrar">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                    </svg>
+                <!-- Row 2: Hierarchical Location + Search + Sort -->
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                    
+                    <!-- Country / Continent -->
+                    <div class="flex flex-col gap-1.5">
+                        <label class="text-[10px] font-semibold uppercase tracking-widest text-zinc-500">País</label>
+                        <select id="filter-country" onchange="handleCountryChange()" class="px-3 py-2 rounded-lg border text-xs font-medium cursor-pointer w-full">
+                            <option value="">Cualquier país</option>
+                            <option value="España">España</option>
+                            <option value="Alemania">Alemania</option>
+                            <option value="Reino Unido">Reino Unido</option>
+                            <option value="Francia">Francia</option>
+                            <option value="Worldwide">Internacional</option>
+                        </select>
+                    </div>
+
+                    <!-- Autonomous Community (Spain only) -->
+                    <div class="flex flex-col gap-1.5">
+                        <label class="text-[10px] font-semibold uppercase tracking-widest text-zinc-500">Comunidad Autónoma</label>
+                        <select id="filter-community" onchange="handleCommunityChange()" class="px-3 py-2 rounded-lg border text-xs font-medium cursor-pointer w-full" disabled>
+                            <option value="">Toda España</option>
+                        </select>
+                    </div>
+
+                    <!-- Province -->
+                    <div class="flex flex-col gap-1.5">
+                        <label class="text-[10px] font-semibold uppercase tracking-widest text-zinc-500">Provincia / Ciudad</label>
+                        <select id="filter-province" onchange="applyFilters()" class="px-3 py-2 rounded-lg border text-xs font-medium cursor-pointer w-full" disabled>
+                            <option value="">Todas</option>
+                        </select>
+                    </div>
+
+                    <!-- Keyword Search -->
+                    <div class="flex flex-col gap-1.5">
+                        <label class="text-[10px] font-semibold uppercase tracking-widest text-zinc-500">Búsqueda libre</label>
+                        <input id="search-input" type="text" placeholder="Empresa, puesto..." oninput="debounceSearch()" class="px-3 py-2 rounded-lg border text-xs placeholder-zinc-600 w-full">
+                    </div>
+                </div>
+
+                <!-- Row 3: Status Tabs + Sort -->
+                <div class="flex items-center justify-between gap-3 flex-wrap pt-1 border-t border-[#1a1d2e]">
+                    <div class="flex items-center gap-0.5 bg-[#080910] p-1 rounded-lg border border-[#1a1d2e] text-[11px] font-medium overflow-x-auto">
+                        <button class="status-btn active-tab px-3 py-1 rounded-md text-white bg-[#1a1d2e]" onclick="setStatus(null, this)">Todas <span id="cnt-total" class="ml-1 text-zinc-500">(0)</span></button>
+                        <button class="status-btn px-3 py-1 rounded-md text-zinc-400 hover:text-zinc-200" onclick="setStatus('NUEVA', this)">Nuevas <span id="cnt-nuevas" class="ml-1 text-zinc-600">(0)</span></button>
+                        <button class="status-btn px-3 py-1 rounded-md text-zinc-400 hover:text-zinc-200" onclick="setStatus('VISTA', this)">Revisadas <span id="cnt-vistas" class="ml-1 text-zinc-600">(0)</span></button>
+                        <button class="status-btn px-3 py-1 rounded-md text-zinc-400 hover:text-zinc-200" onclick="setStatus('APLICADA', this)">Postulado <span id="cnt-aplicadas" class="ml-1 text-zinc-600">(0)</span></button>
+                        <button class="status-btn px-3 py-1 rounded-md text-zinc-400 hover:text-zinc-200" onclick="setStatus('DESCARTADA', this)">Descartadas <span id="cnt-descartadas" class="ml-1 text-zinc-600">(0)</span></button>
+                    </div>
+
+                    <div class="flex items-center gap-2 text-[11px]">
+                        <span class="text-zinc-500">Ordenar:</span>
+                        <select id="sort-select" onchange="reSortAndRender()" class="px-2.5 py-1.5 rounded-lg border text-[11px] font-medium cursor-pointer">
+                            <option value="match">Mayor afinidad</option>
+                            <option value="date">Más recientes</option>
+                        </select>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Results Info Bar -->
+            <div class="flex items-center justify-between px-1 text-[11px] text-zinc-500">
+                <span><span id="results-count" class="font-semibold text-zinc-300">—</span> ofertas encontradas</span>
+                <span class="hidden sm:inline">Haz clic en una oferta para ver el detalle</span>
+            </div>
+
+            <!-- Job Grid (or skeletons, or empty state) -->
+            <div id="skeleton-grid" class="grid grid-cols-1 md:grid-cols-2 gap-3 hidden">
+                <!-- 6 skeleton cards -->
+                <div class="surface rounded-xl p-4 flex flex-col gap-3" style="min-height:140px">
+                    <div class="skeleton h-3 w-32 rounded-md"></div>
+                    <div class="skeleton h-4 w-4/5 rounded-md"></div>
+                    <div class="skeleton h-3 w-2/5 rounded-md"></div>
+                    <div class="flex gap-1.5 mt-auto">
+                        <div class="skeleton h-4 w-14 rounded-md"></div>
+                        <div class="skeleton h-4 w-14 rounded-md"></div>
+                        <div class="skeleton h-4 w-10 rounded-md"></div>
+                    </div>
+                </div>
+                <div class="surface rounded-xl p-4 flex flex-col gap-3" style="min-height:140px">
+                    <div class="skeleton h-3 w-28 rounded-md"></div>
+                    <div class="skeleton h-4 w-3/4 rounded-md"></div>
+                    <div class="skeleton h-3 w-1/3 rounded-md"></div>
+                    <div class="flex gap-1.5 mt-auto">
+                        <div class="skeleton h-4 w-16 rounded-md"></div>
+                        <div class="skeleton h-4 w-12 rounded-md"></div>
+                    </div>
+                </div>
+                <div class="surface rounded-xl p-4 flex flex-col gap-3" style="min-height:140px">
+                    <div class="skeleton h-3 w-36 rounded-md"></div>
+                    <div class="skeleton h-4 w-5/6 rounded-md"></div>
+                    <div class="skeleton h-3 w-2/5 rounded-md"></div>
+                    <div class="flex gap-1.5 mt-auto">
+                        <div class="skeleton h-4 w-12 rounded-md"></div>
+                        <div class="skeleton h-4 w-20 rounded-md"></div>
+                        <div class="skeleton h-4 w-10 rounded-md"></div>
+                    </div>
+                </div>
+                <div class="surface rounded-xl p-4 flex flex-col gap-3" style="min-height:140px">
+                    <div class="skeleton h-3 w-24 rounded-md"></div>
+                    <div class="skeleton h-4 w-3/5 rounded-md"></div>
+                    <div class="skeleton h-3 w-1/2 rounded-md"></div>
+                    <div class="flex gap-1.5 mt-auto">
+                        <div class="skeleton h-4 w-16 rounded-md"></div>
+                        <div class="skeleton h-4 w-14 rounded-md"></div>
+                    </div>
+                </div>
+                <div class="surface rounded-xl p-4 flex flex-col gap-3" style="min-height:140px">
+                    <div class="skeleton h-3 w-32 rounded-md"></div>
+                    <div class="skeleton h-4 w-4/5 rounded-md"></div>
+                    <div class="skeleton h-3 w-1/4 rounded-md"></div>
+                    <div class="flex gap-1.5 mt-auto">
+                        <div class="skeleton h-4 w-10 rounded-md"></div>
+                        <div class="skeleton h-4 w-18 rounded-md"></div>
+                    </div>
+                </div>
+                <div class="surface rounded-xl p-4 flex flex-col gap-3" style="min-height:140px">
+                    <div class="skeleton h-3 w-20 rounded-md"></div>
+                    <div class="skeleton h-4 w-2/3 rounded-md"></div>
+                    <div class="skeleton h-3 w-2/5 rounded-md"></div>
+                    <div class="flex gap-1.5 mt-auto">
+                        <div class="skeleton h-4 w-14 rounded-md"></div>
+                        <div class="skeleton h-4 w-10 rounded-md"></div>
+                        <div class="skeleton h-4 w-16 rounded-md"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Empty State -->
+            <div id="empty-state" class="hidden py-16 flex flex-col items-center justify-center gap-4 text-center">
+                <svg class="w-14 h-14 text-zinc-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                </svg>
+                <div>
+                    <p class="text-sm font-semibold text-zinc-300 mb-1">Sin resultados para estos filtros</p>
+                    <p class="text-xs text-zinc-500 max-w-xs">Prueba a ampliar la zona geográfica, cambiar la modalidad o seleccionar otro perfil de estudios.</p>
+                </div>
+                <button onclick="resetFilters()" class="px-4 py-2 rounded-lg bg-[#0d0f18] hover:bg-[#13162a] text-zinc-300 border border-[#1a1d2e] text-xs font-semibold transition-colors">
+                    Restablecer filtros
                 </button>
             </div>
 
-            <!-- Modal Content -->
-            <div class="flex-1 overflow-y-auto py-5 space-y-4">
-                <div>
-                    <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider block mb-2">Requisitos y Tecnologías</span>
-                    <div id="modal-tech-list" class="flex flex-wrap gap-1.5"></div>
-                </div>
+            <!-- Job Grid -->
+            <div id="job-grid" class="grid grid-cols-1 md:grid-cols-2 gap-3"></div>
 
-                <div>
-                    <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider block mb-2">Descripción del Puesto</span>
-                    <div id="modal-description" class="text-xs sm:text-sm text-slate-300 leading-relaxed bg-slate-900/70 p-4 rounded-xl border border-slate-800 whitespace-pre-line font-normal"></div>
-                </div>
-            </div>
-
-            <!-- Modal Actions -->
-            <div class="pt-4 border-t border-slate-800 flex items-center justify-between gap-3 flex-wrap">
-                <div class="flex items-center gap-2">
-                    <button id="btn-modal-vista" onclick="modalUpdateStatus('VISTA')" class="px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-700 text-xs font-medium transition-colors cursor-pointer">
-                        Marcar como Revisada
-                    </button>
-                    <button id="btn-modal-aplicada" onclick="modalUpdateStatus('APLICADA')" class="px-3.5 py-1.5 rounded-lg bg-emerald-900/60 hover:bg-emerald-800/80 text-emerald-200 border border-emerald-700 text-xs font-semibold transition-colors cursor-pointer">
-                        Marcar como Postulado
-                    </button>
-                    <button id="btn-modal-descartar" onclick="modalUpdateStatus('DESCARTADA')" class="px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-rose-950/60 hover:text-rose-300 text-slate-400 border border-slate-800 text-xs font-medium transition-colors cursor-pointer">
-                        Descartar
-                    </button>
-                </div>
-
-                <a id="modal-external-link" href="#" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs sm:text-sm font-semibold transition-colors cursor-pointer">
-                    <span>Abrir en portal original</span>
-                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
-                    </svg>
-                </a>
+            <!-- Pagination -->
+            <div id="pagination" class="flex items-center justify-between px-4 py-3 surface rounded-xl text-xs font-medium">
+                <button id="btn-prev" onclick="changePage(-1)" disabled class="px-3 py-1.5 rounded-lg bg-[#080910] border border-[#1a1d2e] text-zinc-400 disabled:opacity-40 hover:bg-[#13162a] hover:text-zinc-200 transition-all">← Anterior</button>
+                <span id="page-info" class="text-zinc-500">Pág. 1 / 1</span>
+                <button id="btn-next" onclick="changePage(1)" disabled class="px-3 py-1.5 rounded-lg bg-[#080910] border border-[#1a1d2e] text-zinc-400 disabled:opacity-40 hover:bg-[#13162a] hover:text-zinc-200 transition-all">Siguiente →</button>
             </div>
 
         </div>
     </div>
 
-    <!-- Header Navigation -->
-    <header class="header-pro sticky top-0 z-40 px-4 lg:px-8 py-3">
-        <div class="max-w-7xl mx-auto flex items-center justify-between gap-4">
-            
-            <div class="flex items-center gap-3">
-                <div class="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center font-bold text-white text-sm shadow-md">
-                    TJ
-                </div>
-                <div>
-                    <div class="flex items-center gap-2">
-                        <h1 class="text-base font-bold text-white tracking-tight">TechJob Portal</h1>
-                        <span class="text-[11px] font-medium bg-slate-800 text-slate-300 border border-slate-700 px-2 py-0.5 rounded">Agregador Técnico</span>
-                    </div>
-                </div>
-            </div>
-
-            <div class="flex items-center gap-3">
-                <div class="hidden sm:flex items-center gap-2 px-2.5 py-1 rounded-md bg-slate-900 border border-slate-800 text-xs text-slate-400">
-                    <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
-                    <span id="status-text">Servidor Activo</span>
-                </div>
-
-                <button id="btn-sync" onclick="triggerSync()" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold transition-all cursor-pointer">
-                    <svg id="sync-spinner" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
-                    </svg>
-                    <span>Sincronizar Ofertas</span>
-                </button>
-            </div>
-
-        </div>
-    </header>
-
-    <!-- Main Content -->
-    <main class="flex-1 max-w-7xl w-full mx-auto px-4 lg:px-8 py-5 flex flex-col gap-4">
-
-        <!-- Compact Professional Filter Bar -->
-        <section class="card-pro rounded-xl p-4 flex flex-col gap-3 shadow-lg">
-            
-            <!-- Filters Row 1: Studies, Modality, Location & Search -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
-                
-                <!-- Studies / Specialty Filter -->
-                <div class="flex flex-col gap-1">
-                    <label class="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Perfil / Estudios:</label>
-                    <select id="filter-studies" onchange="handleFilterChange()" class="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-xs text-slate-200 focus:border-indigo-500 focus:outline-none cursor-pointer">
-                        <option value="DAM">Desarrollo Multiplataforma (DAM)</option>
-                        <option value="DAW">Desarrollo Web (DAW)</option>
-                        <option value="ASIR">Administración Sistemas & Redes (ASIR)</option>
-                        <option value="DEVOPS">DevOps & Cloud Engineering</option>
-                        <option value="ING">Ingeniería Informática / Software</option>
-                        <option value="ALL">Todos los perfiles técnicos</option>
-                    </select>
-                </div>
-
-                <!-- Modality Filter -->
-                <div class="flex flex-col gap-1">
-                    <label class="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Modalidad:</label>
-                    <select id="filter-modality" onchange="handleFilterChange()" class="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-xs text-slate-200 focus:border-indigo-500 focus:outline-none cursor-pointer">
-                        <option value="ALL">Todas las modalidades</option>
-                        <option value="REMOTE_ONLY">100% Remoto (Teletrabajo)</option>
-                        <option value="ONSITE_HYBRID">Presencial o Híbrido</option>
-                    </select>
-                </div>
-
-                <!-- Location Filter with Spanish Presets & Input -->
-                <div class="flex flex-col gap-1">
-                    <label class="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Ubicación / Región:</label>
-                    <div class="flex gap-1.5">
-                        <select id="filter-location-preset" onchange="handleLocationPreset(event)" class="w-1/2 px-2.5 py-2 bg-slate-900 border border-slate-700 rounded-lg text-xs text-slate-200 focus:border-indigo-500 focus:outline-none cursor-pointer">
-                            <option value="">Cualquier país</option>
-                            <option value="España">España (Nacional)</option>
-                            <option value="Andalucía">Andalucía</option>
-                            <option value="Jaén">Jaén</option>
-                            <option value="Madrid">Madrid</option>
-                            <option value="Barcelona">Barcelona</option>
-                            <option value="Europe">Europa</option>
-                        </select>
-                        <input 
-                            type="text" 
-                            id="filter-location-custom" 
-                            placeholder="Ej: Jaén, Sevilla..." 
-                            oninput="handleSearchDebounce()" 
-                            class="w-1/2 px-2.5 py-2 bg-slate-900 border border-slate-700 rounded-lg text-xs text-slate-200 placeholder-slate-500 focus:border-indigo-500 focus:outline-none"
-                        />
-                    </div>
-                </div>
-
-                <!-- Keyword Search -->
-                <div class="flex flex-col gap-1">
-                    <label class="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Buscar por texto:</label>
-                    <div class="relative">
-                        <input 
-                            type="text" 
-                            id="search-input" 
-                            placeholder="Empresa, puesto o palabra clave..." 
-                            oninput="handleSearchDebounce()" 
-                            class="w-full pl-3 pr-8 py-2 bg-slate-900 border border-slate-700 rounded-lg text-xs text-slate-200 placeholder-slate-500 focus:border-indigo-500 focus:outline-none"
-                        />
-                        <button onclick="clearSearch()" id="btn-clear-search" class="absolute right-2 top-2 text-slate-500 hover:text-slate-300 hidden text-xs">✕</button>
-                    </div>
-                </div>
-
-            </div>
-
-            <!-- Filters Row 2: Status Tabs, Sorting & Result Counters -->
-            <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-2.5 border-t border-slate-800">
-                
-                <!-- Status Tabs -->
-                <div class="flex items-center gap-1 bg-slate-950 p-1 rounded-lg border border-slate-800 text-xs font-medium overflow-x-auto">
-                    <button onclick="selectStatus(null)" id="tab-all" class="status-tab px-3 py-1 rounded text-slate-300 hover:text-white bg-slate-800 text-white font-semibold">Todas (<span id="count-total">0</span>)</button>
-                    <button onclick="selectStatus('NUEVA')" id="tab-NUEVA" class="status-tab px-3 py-1 rounded text-slate-400 hover:text-white">Nuevas (<span id="count-nuevas">0</span>)</button>
-                    <button onclick="selectStatus('VISTA')" id="tab-VISTA" class="status-tab px-3 py-1 rounded text-slate-400 hover:text-white">Revisadas (<span id="count-vistas">0</span>)</button>
-                    <button onclick="selectStatus('APLICADA')" id="tab-APLICADA" class="status-tab px-3 py-1 rounded text-slate-400 hover:text-white">Postulado (<span id="count-aplicadas">0</span>)</button>
-                    <button onclick="selectStatus('DESCARTADA')" id="tab-DESCARTADA" class="status-tab px-3 py-1 rounded text-slate-400 hover:text-white">Descartadas (<span id="count-descartadas">0</span>)</button>
-                </div>
-
-                <!-- Sort Control -->
-                <div class="flex items-center gap-2 text-xs">
-                    <span class="text-slate-400 whitespace-nowrap">Ordenar por:</span>
-                    <select id="sort-select" onchange="handleSortChange(event)" class="px-2.5 py-1.5 bg-slate-900 border border-slate-700 rounded-lg text-xs text-slate-200 focus:border-indigo-500 focus:outline-none cursor-pointer">
-                        <option value="match">Mayor afinidad con mis estudios</option>
-                        <option value="date">Más recientes</option>
-                    </select>
-                </div>
-
-            </div>
-
-        </section>
-
-        <!-- Results Counter & Status Summary -->
-        <div class="flex items-center justify-between px-1 text-xs text-slate-400">
-            <div>
-                <span id="results-count" class="font-semibold text-slate-200">0</span> ofertas encontradas
-                <span id="active-filters-summary" class="ml-2 text-slate-500"></span>
-            </div>
-            <span class="hidden sm:inline text-slate-500">Haz clic en cualquier oferta para ver el detalle</span>
-        </div>
-
-        <!-- Loading State -->
-        <div id="loading-state" class="hidden py-16 flex flex-col items-center justify-center gap-3 text-center">
-            <div class="w-8 h-8 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
-            <span class="text-xs text-slate-400">Filtrando ofertas...</span>
-        </div>
-
-        <!-- Empty State -->
-        <div id="empty-state" class="hidden py-14 card-pro rounded-xl flex flex-col items-center justify-center gap-2 text-center px-4">
-            <span class="text-base font-semibold text-white">No se han encontrado ofertas con estos filtros</span>
-            <p class="text-xs text-slate-400 max-w-md">Prueba a seleccionar "Todas las modalidades" o ampliar la ubicación geográfica.</p>
-            <button onclick="resetFilters()" class="mt-2 text-xs font-semibold px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 transition-colors">
-                Restablecer filtros
-            </button>
-        </div>
-
-        <!-- Jobs Grid -->
-        <div id="job-grid" class="grid grid-cols-1 md:grid-cols-2 gap-3.5"></div>
-
-        <!-- Pagination -->
-        <div id="pagination-container" class="flex items-center justify-between px-3 py-3 card-pro rounded-xl mt-1">
-            <button 
-                id="btn-prev-page" 
-                onclick="changePage(-1)" 
-                disabled 
-                class="px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-xs font-medium text-slate-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-800 transition-all cursor-pointer"
-            >
-                ← Anterior
-            </button>
-            <span id="page-info" class="text-xs font-medium text-slate-400">Página 1 de 1</span>
-            <button 
-                id="btn-next-page" 
-                onclick="changePage(1)" 
-                disabled 
-                class="px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-xs font-medium text-slate-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-800 transition-all cursor-pointer"
-            >
-                Siguiente →
-            </button>
-        </div>
-
-    </main>
-
-    <!-- Footer -->
-    <footer class="mt-auto border-t border-slate-900 py-4 px-4 text-center text-xs text-slate-500">
-        TechJob Portal • Agregador de Empleo Técnico • Spring Boot 3 + PostgreSQL
-    </footer>
-
-    <!-- JavaScript Application Logic -->
     <script>
-        // Core Technology definitions per study program
+        // =====================================================================
+        // STATE
+        // =====================================================================
         const STUDY_STACKS = {
-            'DAM': ['Java', 'Kotlin', 'Flutter', 'Dart', 'Swift', 'SwiftUI', 'React Native', 'SQL', 'PostgreSQL', 'SQLite', 'Android', 'iOS', 'Git', 'REST API', 'C#', '.NET'],
-            'DAW': ['Java', 'Spring Boot', 'JavaScript', 'TypeScript', 'React', 'Vue.js', 'Angular', 'Node.js', 'SQL', 'PostgreSQL', 'HTML', 'PHP', 'Laravel', 'Django', 'FastAPI', 'Git', 'REST API'],
-            'ASIR': ['Linux', 'Redes/Networking', 'Sysadmin', 'Docker', 'Kubernetes', 'Bash/Shell', 'PowerShell', 'Ciberseguridad', 'Nginx', 'Apache', 'AWS', 'Azure', 'SQL', 'Git', 'Terraform'],
-            'DEVOPS': ['Docker', 'Kubernetes', 'DevOps', 'CI/CD', 'Terraform', 'Ansible', 'AWS', 'Azure', 'GCP', 'Linux', 'Python', 'Go', 'Bash/Shell', 'Git'],
-            'ING': ['Java', 'Python', 'Spring Boot', 'C++', 'C#', '.NET', 'SQL', 'PostgreSQL', 'Docker', 'Linux', 'Go', 'Rust', 'Git', 'REST API'],
-            'ALL': []
+            'DAM':   ['Java','Kotlin','Flutter','Dart','Swift','SwiftUI','React Native','SQL','Android','iOS','C#','.NET'],
+            'DAW':   ['JavaScript','TypeScript','React','Vue.js','Angular','Node.js','Java','Spring Boot','PHP','HTML','CSS','SQL','PostgreSQL'],
+            'ASIR':  ['Linux','Redes/Networking','Sysadmin','Docker','Bash/Shell','PowerShell','Ciberseguridad','Nginx','Apache','Azure','AWS'],
+            'SMR':   ['Linux','Windows','Redes/Networking','Sysadmin','Bash/Shell','Ciberseguridad'],
+            'GRADO_INFORMATICA': ['Java','Python','C++','SQL','PostgreSQL','Docker','Linux','Go','REST API','Spring Boot'],
+            'INGENIERIA': ['Java','Python','C++','C#','.NET','Go','Rust','SQL','PostgreSQL','Docker','AWS','Azure','GCP'],
+            'DEVOPS': ['Docker','Kubernetes','DevOps','CI/CD','Terraform','Ansible','AWS','Azure','GCP','Linux','Python','Go','Bash/Shell'],
+            'BOOTCAMP': ['JavaScript','TypeScript','React','Node.js','Python','SQL','HTML','CSS','Git','REST API']
         };
 
-        // State
-        let currentStudies = 'DAM';
-        let currentModality = 'ALL';
-        let currentLocation = '';
-        let currentStatus = null;
-        let currentKeyword = '';
-        let currentSort = 'match';
-        let currentPage = 0;
-        const pageSize = 16;
-        let searchTimeout = null;
-        let currentLoadedJobs = [];
-        let selectedJob = null;
+        let state = {
+            selectedStudies: ['DAM'],
+            modality: '',
+            country: '',
+            community: '',
+            province: '',
+            status: null,
+            keyword: '',
+            sort: 'match',
+            page: 0,
+            pageSize: 18
+        };
+        let loadedJobs = [];
+        let activeModal = null;
+        let searchTimer = null;
+        let geoData = {};
 
-        const API_BASE = '/api';
-
+        // =====================================================================
+        // INIT
+        // =====================================================================
         document.addEventListener('DOMContentLoaded', () => {
-            loadSavedPreferences();
+            loadPrefs();
+            loadGeoData();
             checkHealth();
             fetchStats();
             fetchJobs();
-
-            document.addEventListener('keydown', (e) => {
-                if (e.key === 'Escape') closeModal();
-            });
+            document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
         });
 
-        function loadSavedPreferences() {
+        function loadPrefs() {
             try {
-                const saved = localStorage.getItem('techjob_portal_prefs');
-                if (saved) {
-                    const parsed = JSON.parse(saved);
-                    currentStudies = parsed.studies || 'DAM';
-                    currentModality = parsed.modality || 'ALL';
-                    currentLocation = parsed.location || '';
-                }
-            } catch (e) {}
+                const p = JSON.parse(localStorage.getItem('tj_prefs') || '{}');
+                if (p.studies) state.selectedStudies = p.studies;
+            } catch(e) {}
+            syncStudyTagsUI();
+        }
 
-            document.getElementById('filter-studies').value = currentStudies;
-            document.getElementById('filter-modality').value = currentModality;
-            if (['España', 'Andalucía', 'Jaén', 'Madrid', 'Barcelona', 'Europe', ''].includes(currentLocation)) {
-                document.getElementById('filter-location-preset').value = currentLocation;
+        function savePrefs() {
+            localStorage.setItem('tj_prefs', JSON.stringify({ studies: state.selectedStudies }));
+        }
+
+        async function loadGeoData() {
+            try {
+                const res = await fetch('/api/jobs/geo/spain');
+                if (res.ok) geoData = await res.json();
+            } catch(e) {}
+        }
+
+        // =====================================================================
+        // FILTERS — STUDIES TAGS
+        // =====================================================================
+        function toggleStudy(el) {
+            const study = el.dataset.study;
+            if (state.selectedStudies.includes(study)) {
+                if (state.selectedStudies.length === 1) return; // keep at least 1
+                state.selectedStudies = state.selectedStudies.filter(s => s !== study);
             } else {
-                document.getElementById('filter-location-custom').value = currentLocation;
+                state.selectedStudies = [...state.selectedStudies, study];
             }
-        }
-
-        function savePreferences() {
-            const toSave = {
-                studies: currentStudies,
-                modality: currentModality,
-                location: currentLocation
-            };
-            localStorage.setItem('techjob_portal_prefs', JSON.stringify(toSave));
-        }
-
-        function handleFilterChange() {
-            currentStudies = document.getElementById('filter-studies').value;
-            currentModality = document.getElementById('filter-modality').value;
-            savePreferences();
-            currentPage = 0;
+            syncStudyTagsUI();
+            savePrefs();
+            state.page = 0;
             fetchJobs();
         }
 
-        function handleLocationPreset(e) {
-            const val = e.target.value;
-            document.getElementById('filter-location-custom').value = '';
-            currentLocation = val;
-            savePreferences();
-            currentPage = 0;
-            fetchJobs();
-        }
-
-        function handleSearchDebounce() {
-            clearTimeout(searchTimeout);
-            searchTimeout = setTimeout(() => {
-                const customLoc = document.getElementById('filter-location-custom').value.trim();
-                if (customLoc) {
-                    currentLocation = customLoc;
-                    document.getElementById('filter-location-preset').value = '';
-                } else {
-                    currentLocation = document.getElementById('filter-location-preset').value;
-                }
-
-                currentKeyword = document.getElementById('search-input').value.trim();
-                document.getElementById('btn-clear-search').classList.toggle('hidden', !currentKeyword);
-
-                savePreferences();
-                currentPage = 0;
-                fetchJobs();
-            }, 300);
-        }
-
-        function clearSearch() {
-            document.getElementById('search-input').value = '';
-            currentKeyword = '';
-            document.getElementById('btn-clear-search').classList.add('hidden');
-            currentPage = 0;
-            fetchJobs();
-        }
-
-        function selectStatus(status) {
-            currentStatus = status;
-            currentPage = 0;
-
-            document.querySelectorAll('.status-tab').forEach(tab => {
-                tab.classList.remove('bg-slate-800', 'text-white', 'font-semibold');
-                tab.classList.add('text-slate-400');
+        function syncStudyTagsUI() {
+            document.querySelectorAll('.tag-study').forEach(tag => {
+                tag.classList.toggle('active', state.selectedStudies.includes(tag.dataset.study));
             });
+        }
 
-            const activeTabId = status ? `tab-${status}` : 'tab-all';
-            const activeTab = document.getElementById(activeTabId);
-            if (activeTab) {
-                activeTab.classList.add('bg-slate-800', 'text-white', 'font-semibold');
-                activeTab.classList.remove('text-slate-400');
+        // =====================================================================
+        // FILTERS — LOCATION CASCADE
+        // =====================================================================
+        function handleCountryChange() {
+            const country = document.getElementById('filter-country').value;
+            state.country = country;
+            state.community = '';
+            state.province = '';
+            state.page = 0;
+
+            const commSel = document.getElementById('filter-community');
+            const provSel = document.getElementById('filter-province');
+
+            commSel.innerHTML = '<option value="">Toda España</option>';
+            provSel.innerHTML = '<option value="">Todas</option>';
+
+            if (country === 'España') {
+                commSel.disabled = false;
+                Object.keys(geoData).forEach(comm => {
+                    commSel.innerHTML += `<option value="${comm}">${comm}</option>`;
+                });
+            } else {
+                commSel.disabled = true;
+                provSel.disabled = true;
             }
 
+            applyFilters();
+        }
+
+        function handleCommunityChange() {
+            const comm = document.getElementById('filter-community').value;
+            state.community = comm;
+            state.province = '';
+            state.page = 0;
+
+            const provSel = document.getElementById('filter-province');
+            provSel.innerHTML = '<option value="">Todas</option>';
+
+            if (comm && geoData[comm]) {
+                provSel.disabled = false;
+                geoData[comm].forEach(prov => {
+                    provSel.innerHTML += `<option value="${prov}">${prov}</option>`;
+                });
+            } else {
+                provSel.disabled = true;
+            }
+
+            applyFilters();
+        }
+
+        // =====================================================================
+        // FILTERS — GENERAL
+        // =====================================================================
+        function applyFilters() {
+            state.modality = document.getElementById('filter-modality').value;
+            state.community = document.getElementById('filter-community').value;
+            state.province = document.getElementById('filter-province').value;
+            state.country = document.getElementById('filter-country').value;
+            state.page = 0;
             fetchJobs();
         }
 
-        function handleSortChange(e) {
-            currentSort = e.target.value;
-            reSortAndRender();
+        function debounceSearch() {
+            clearTimeout(searchTimer);
+            searchTimer = setTimeout(() => {
+                state.keyword = document.getElementById('search-input').value.trim();
+                state.page = 0;
+                fetchJobs();
+            }, 320);
+        }
+
+        function setStatus(status, el) {
+            state.status = status;
+            state.page = 0;
+            document.querySelectorAll('.status-btn').forEach(b => {
+                b.classList.remove('active-tab', 'bg-[#1a1d2e]', 'text-white');
+                b.classList.add('text-zinc-400');
+            });
+            el.classList.add('active-tab', 'bg-[#1a1d2e]', 'text-white');
+            el.classList.remove('text-zinc-400');
+            fetchJobs();
         }
 
         function resetFilters() {
-            currentStudies = 'DAM';
-            currentModality = 'ALL';
-            currentLocation = '';
-            currentStatus = null;
-            currentKeyword = '';
-            currentPage = 0;
-
-            document.getElementById('filter-studies').value = 'DAM';
-            document.getElementById('filter-modality').value = 'ALL';
-            document.getElementById('filter-location-preset').value = '';
-            document.getElementById('filter-location-custom').value = '';
+            state = { ...state, modality: '', country: '', community: '', province: '', status: null, keyword: '', page: 0 };
+            document.getElementById('filter-modality').value = '';
+            document.getElementById('filter-country').value = '';
+            document.getElementById('filter-community').value = '';
+            document.getElementById('filter-community').disabled = true;
+            document.getElementById('filter-province').value = '';
+            document.getElementById('filter-province').disabled = true;
             document.getElementById('search-input').value = '';
-            document.getElementById('btn-clear-search').classList.add('hidden');
-
-            selectStatus(null);
+            document.querySelectorAll('.status-btn').forEach((b, i) => {
+                b.classList.remove('active-tab', 'bg-[#1a1d2e]', 'text-white');
+                b.classList.add('text-zinc-400');
+            });
+            document.querySelector('.status-btn').classList.add('active-tab', 'bg-[#1a1d2e]', 'text-white');
+            fetchJobs();
         }
 
-        // Calculate Match Percentage with User's Studies
-        function calculateMatch(job) {
-            let score = 0;
-            const targetStack = STUDY_STACKS[currentStudies] || [];
-            const jobTechs = job.requiredTechnologies || [];
-
-            if (currentStudies === 'ALL') {
-                return 80;
-            }
-
-            // Tech stack match (up to 75 points)
-            if (targetStack.length > 0) {
-                let matches = 0;
-                jobTechs.forEach(t => {
-                    if (targetStack.some(st => st.toLowerCase() === t.toLowerCase())) {
-                        matches++;
-                    }
-                });
-
-                if (jobTechs.length > 0) {
-                    score += Math.min(1.0, matches / Math.min(jobTechs.length, 3)) * 75;
-                } else {
-                    score += 45; // neutral
-                }
-            } else {
-                score += 50;
-            }
-
-            // Modality match (up to 15 points)
-            if (currentModality === 'REMOTE_ONLY') {
-                if (job.isRemote) score += 15;
-                else score -= 25;
-            } else if (currentModality === 'ONSITE_HYBRID') {
-                if (!job.isRemote) score += 15;
-            } else {
-                score += 15;
-            }
-
-            // Location match (up to 10 points)
-            const loc = (currentLocation || '').toLowerCase();
-            const jobLoc = (job.location || '').toLowerCase();
-            if (loc) {
-                if (jobLoc.includes(loc) || (job.isRemote && (jobLoc.includes('spain') || jobLoc.includes('españa') || jobLoc.includes('world') || jobLoc.includes('emea')))) {
-                    score += 10;
-                }
-            } else {
-                score += 10;
-            }
-
-            return Math.max(15, Math.min(99, Math.round(score)));
-        }
-
-        // Fetch jobs from backend
+        // =====================================================================
+        // DATA FETCH
+        // =====================================================================
         async function fetchJobs() {
-            showLoading(true);
+            showSkeletons(true);
+
+            const params = new URLSearchParams();
+            params.set('page', state.page);
+            params.set('size', state.pageSize);
+            if (state.status) params.set('status', state.status);
+            if (state.keyword) params.set('keyword', state.keyword);
+            if (state.modality) params.set('modality', state.modality);
+            if (state.country) params.set('country', state.country);
+            if (state.community) params.set('community', state.community);
+            if (state.province) params.set('province', state.province);
+            state.selectedStudies.forEach(s => params.append('studies', s));
+
             try {
-                let url = `${API_BASE}/jobs?page=${currentPage}&size=${pageSize}`;
-                if (currentStatus) url += `&status=${encodeURIComponent(currentStatus)}`;
-                if (currentKeyword) url += `&keyword=${encodeURIComponent(currentKeyword)}`;
-
-                if (currentModality === 'REMOTE_ONLY') {
-                    url += `&isRemote=true`;
-                }
-
-                if (currentLocation) {
-                    url += `&location=${encodeURIComponent(currentLocation)}`;
-                }
-
-                const res = await fetch(url);
+                const res = await fetch('/api/jobs?' + params.toString());
                 if (!res.ok) throw new Error();
-
                 const data = await res.json();
-                currentLoadedJobs = (data.content || []).map(j => ({
-                    ...j,
-                    matchPercentage: calculateMatch(j)
-                }));
-
+                loadedJobs = (data.content || []).map(j => ({ ...j, _match: calcMatch(j) }));
                 reSortAndRender();
                 updatePagination(data);
-            } catch (err) {
-                showToast("Error de conexión al cargar ofertas", "error");
+            } catch (e) {
+                showToast('Error de conexión con el servidor', 'error');
                 renderJobs([]);
             } finally {
-                showLoading(false);
+                showSkeletons(false);
             }
         }
 
         function reSortAndRender() {
-            if (currentSort === 'match') {
-                currentLoadedJobs.sort((a, b) => b.matchPercentage - a.matchPercentage);
+            const sorted = [...loadedJobs];
+            if (document.getElementById('sort-select').value === 'match') {
+                sorted.sort((a, b) => b._match - a._match);
             }
-            renderJobs(currentLoadedJobs);
+            renderJobs(sorted);
+        }
+
+        function calcMatch(job) {
+            let score = 0;
+            const allStacks = state.selectedStudies.flatMap(s => STUDY_STACKS[s] || []);
+            const uniqueStack = [...new Set(allStacks)];
+            const jobTechs = job.requiredTechnologies || [];
+
+            if (uniqueStack.length === 0) return 70;
+
+            // Tech match (70 pts)
+            const matches = jobTechs.filter(t => uniqueStack.some(st => st.toLowerCase() === t.toLowerCase())).length;
+            score += Math.min(1, matches / Math.max(1, Math.min(jobTechs.length, 4))) * 70;
+
+            // Modality (15 pts)
+            const wantsRemote = state.modality === 'REMOTO_100' || state.modality === '';
+            if (wantsRemote && job.modality === 'REMOTO_100') score += 15;
+            else if (state.modality === '' ) score += 10;
+
+            // Location (15 pts)
+            if (!state.country || job.country?.toLowerCase().includes(state.country.toLowerCase())) score += 15;
+
+            return Math.max(5, Math.min(98, Math.round(score)));
         }
 
         function renderJobs(jobs) {
             const grid = document.getElementById('job-grid');
-            const emptyState = document.getElementById('empty-state');
-            const resultsCount = document.getElementById('results-count');
+            const empty = document.getElementById('empty-state');
+            document.getElementById('results-count').textContent = jobs.length;
 
-            resultsCount.textContent = jobs.length;
-
-            if (!jobs || jobs.length === 0) {
+            if (!jobs.length) {
                 grid.innerHTML = '';
-                emptyState.classList.remove('hidden');
+                empty.classList.remove('hidden');
                 return;
             }
-
-            emptyState.classList.add('hidden');
-            grid.innerHTML = jobs.map(j => createJobCard(j)).join('');
+            empty.classList.add('hidden');
+            grid.innerHTML = jobs.map(buildCard).join('');
         }
 
-        function createJobCard(job) {
-            const statusBadge = getStatusBadge(job.status);
-            const sourceBadge = getSourceBadge(job.source);
-            const relativeDate = formatRelativeDate(job.publishedDate);
-            const matchBadge = getMatchBadge(job.matchPercentage);
-            const cleanDesc = cleanTextOnly(job.shortDescription || 'Sin descripción disponible.');
+        // =====================================================================
+        // CARD BUILDER
+        // =====================================================================
+        function buildCard(job) {
+            const allStacks = state.selectedStudies.flatMap(s => STUDY_STACKS[s] || []);
+            const uniqueStack = [...new Set(allStacks)];
+            const match = job._match || 0;
 
-            const stack = STUDY_STACKS[currentStudies] || [];
             const techPills = (job.requiredTechnologies || []).slice(0, 5).map(t => {
-                const isMatch = stack.some(st => st.toLowerCase() === t.toLowerCase());
-                const cls = isMatch 
-                    ? 'bg-slate-800 text-indigo-300 border-slate-700 font-medium' 
-                    : 'bg-slate-900 text-slate-400 border-slate-800';
-                return `<span class="px-2 py-0.5 text-[11px] rounded border ${cls}">${escapeHtml(t)}</span>`;
+                const isMatch = uniqueStack.some(st => st.toLowerCase() === t.toLowerCase());
+                return `<span class="px-1.5 py-0.5 text-[10px] rounded-md border ${isMatch ? 'bg-indigo-950/40 border-indigo-800/50 text-indigo-300 font-semibold' : 'bg-[#0d0f18] border-[#1a1d2e] text-zinc-500'}">${esc(t)}</span>`;
             }).join('');
 
+            const matchBadge = match >= 80
+                ? `<span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-emerald-950/50 border border-emerald-800/40 text-emerald-400">${match}%</span>`
+                : match >= 50
+                ? `<span class="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-indigo-950/40 border border-indigo-900/50 text-indigo-400">${match}%</span>`
+                : `<span class="text-[10px] px-2 py-0.5 rounded-md bg-[#0d0f18] border border-[#1a1d2e] text-zinc-600">${match}%</span>`;
+
+            const statusBadge = getStatusBadge(job.status);
+            const sourceBadge = getSourceBadge(job.source);
+            const modalityLabel = getModalityLabel(job.modality);
+            const date = relDate(job.publishedDate);
+            const desc = esc(cleanText(job.shortDescription || '').substring(0, 120));
+            const loc = esc(buildDisplayLocation(job));
+
             return `
-                <div 
-                    onclick="openDetailModal(${job.id})" 
-                    class="card-pro rounded-xl p-4 flex flex-col justify-between gap-3.5 transition-all duration-150 hover:translate-y-[-1px] cursor-pointer"
-                >
-                    <div class="flex flex-col gap-2">
-                        
-                        <!-- Top meta -->
-                        <div class="flex items-center justify-between gap-2 flex-wrap text-xs">
-                            <div class="flex items-center gap-2">
-                                ${sourceBadge}
-                                ${matchBadge}
-                            </div>
-                            <div>
-                                ${statusBadge}
-                            </div>
+            <div class="offer-card surface surface-hover rounded-xl p-4 flex flex-col gap-3 cursor-pointer" onclick="openModal(${job.id})">
+                <div class="flex items-start justify-between gap-3">
+                    <div class="flex flex-col gap-1.5 flex-1 min-w-0">
+                        <div class="flex items-center gap-1.5 flex-wrap">
+                            ${sourceBadge}
+                            ${matchBadge}
+                            ${modalityLabel}
                         </div>
-
-                        <!-- Title & Company -->
-                        <div>
-                            <h3 class="text-sm sm:text-base font-bold text-white leading-snug hover:text-indigo-400 transition-colors">
-                                ${escapeHtml(job.title)}
-                            </h3>
-                            <div class="flex items-center gap-2 mt-1 text-xs text-slate-400 flex-wrap">
-                                <span class="font-semibold text-slate-300">${escapeHtml(job.companyName)}</span>
-                                <span>•</span>
-                                <span>${escapeHtml(job.location || (job.isRemote ? 'Remoto' : 'España'))}</span>
-                                <span>•</span>
-                                <span class="text-slate-500">${relativeDate}</span>
-                            </div>
-                        </div>
-
-                        <!-- Clean Description Snippet -->
-                        <p class="text-xs text-slate-400 line-clamp-2 leading-relaxed">
-                            ${escapeHtml(cleanDesc)}
-                        </p>
-
-                        <!-- Tech tags -->
-                        <div class="flex flex-wrap gap-1 mt-1">
-                            ${techPills}
-                        </div>
-
-                    </div>
-
-                    <!-- Card Actions -->
-                    <div class="flex items-center justify-between gap-2 pt-2.5 border-t border-slate-800 text-xs" onclick="event.stopPropagation()">
-                        <a 
-                            href="${escapeHtml(job.url)}" 
-                            target="_blank" 
-                            rel="noopener noreferrer"
-                            onclick="handleOpenOffer(${job.id})"
-                            class="text-indigo-400 hover:text-indigo-300 font-medium inline-flex items-center gap-1 transition-colors"
-                        >
-                            <span>Abrir enlace</span>
-                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
-                            </svg>
-                        </a>
-
-                        <div class="flex items-center gap-1.5">
-                            ${job.status !== 'APLICADA' ? `
-                                <button 
-                                    onclick="updateOfferStatus(${job.id}, 'APLICADA')" 
-                                    class="px-2.5 py-1 rounded bg-slate-900 hover:bg-emerald-900/50 hover:text-emerald-300 text-slate-300 border border-slate-700 transition-colors"
-                                >
-                                    Postulado
-                                </button>
-                            ` : ''}
-
-                            ${job.status !== 'DESCARTADA' ? `
-                                <button 
-                                    onclick="updateOfferStatus(${job.id}, 'DESCARTADA')" 
-                                    class="px-2 py-1 rounded bg-slate-900 hover:bg-rose-950/50 hover:text-rose-300 text-slate-500 border border-slate-800 transition-colors"
-                                    title="Descartar"
-                                >
-                                    Descartar
-                                </button>
-                            ` : `
-                                <button 
-                                    onclick="updateOfferStatus(${job.id}, 'NUEVA')" 
-                                    class="px-2 py-1 rounded bg-slate-800 text-slate-300 hover:bg-slate-700"
-                                >
-                                    Restaurar
-                                </button>
-                            `}
+                        <h3 class="text-sm font-bold text-zinc-100 leading-snug">${esc(job.title)}</h3>
+                        <div class="flex items-center gap-2 text-[11px] text-zinc-400 flex-wrap">
+                            <span class="font-semibold text-zinc-300">${esc(job.companyName)}</span>
+                            <span class="text-zinc-600">•</span>
+                            <span>${loc}</span>
+                            <span class="text-zinc-600">•</span>
+                            <span class="text-zinc-500">${date}</span>
                         </div>
                     </div>
-
+                    ${statusBadge}
                 </div>
-            `;
+                <p class="text-[11px] text-zinc-500 leading-relaxed line-clamp-2">${desc}</p>
+                <div class="flex flex-wrap gap-1">${techPills}</div>
+                <div class="flex items-center justify-between gap-2 pt-2.5 border-t border-[#1a1d2e]" onclick="event.stopPropagation()">
+                    <a href="${esc(job.url)}" target="_blank" rel="noopener noreferrer" onclick="markViewed(${job.id})" class="text-[11px] font-semibold text-indigo-400 hover:text-indigo-300 inline-flex items-center gap-1 transition-colors">
+                        Abrir oferta
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
+                    </a>
+                    <div class="flex items-center gap-1.5">
+                        ${job.status !== 'APLICADA' ? `<button onclick="setJobStatus(${job.id},'APLICADA')" class="px-2.5 py-1 text-[10px] font-semibold rounded-md bg-[#0d0f18] hover:bg-emerald-950/40 hover:text-emerald-300 text-zinc-400 border border-[#1a1d2e] transition-colors">Postulado</button>` : ''}
+                        ${job.status !== 'DESCARTADA' ? `<button onclick="setJobStatus(${job.id},'DESCARTADA')" class="px-2 py-1 text-[10px] rounded-md text-zinc-600 hover:text-rose-400 transition-colors">Descartar</button>` : `<button onclick="setJobStatus(${job.id},'NUEVA')" class="px-2 py-1 text-[10px] rounded-md text-zinc-500 hover:text-zinc-300 transition-colors">Restaurar</button>`}
+                    </div>
+                </div>
+            </div>`;
         }
 
-        // Open Modal Detail
-        function openDetailModal(id) {
-            const job = currentLoadedJobs.find(j => j.id === id);
+        // =====================================================================
+        // MODAL
+        // =====================================================================
+        function openModal(id) {
+            const job = loadedJobs.find(j => j.id === id);
             if (!job) return;
+            activeModal = job;
+            markViewed(id);
 
-            selectedJob = job;
-
-            if (job.status === 'NUEVA') {
-                handleOpenOffer(job.id);
-                job.status = 'VISTA';
-            }
+            const allStacks = state.selectedStudies.flatMap(s => STUDY_STACKS[s] || []);
+            const uniqueStack = [...new Set(allStacks)];
+            const match = job._match || calcMatch(job);
 
             document.getElementById('modal-title').textContent = job.title;
             document.getElementById('modal-company').textContent = job.companyName;
-            document.getElementById('modal-location').textContent = job.location || (job.isRemote ? 'Remoto' : 'No especificado');
-            document.getElementById('modal-date').textContent = 'Publicado ' + formatRelativeDate(job.publishedDate);
-            
-            document.getElementById('modal-source-badge').innerHTML = getSourceBadge(job.source);
-            document.getElementById('modal-status-badge').innerHTML = getStatusBadge(job.status);
-            document.getElementById('modal-match-badge').innerHTML = `${job.matchPercentage || calculateMatch(job)}% Afinidad`;
+            document.getElementById('modal-location').textContent = buildDisplayLocation(job);
+            document.getElementById('modal-date').textContent = 'Publicado ' + relDate(job.publishedDate);
+            document.getElementById('modal-source').innerHTML = getSourceBadge(job.source);
+            document.getElementById('modal-modality').innerHTML = getModalityLabel(job.modality);
 
-            // Render Tech chips in modal
-            const modalTechList = document.getElementById('modal-tech-list');
-            modalTechList.innerHTML = '';
-            const stack = STUDY_STACKS[currentStudies] || [];
-            (job.requiredTechnologies || []).forEach(t => {
-                const isMatch = stack.some(st => st.toLowerCase() === t.toLowerCase());
-                const badge = document.createElement('span');
-                badge.className = `px-2.5 py-1 text-xs rounded border ${
-                    isMatch 
-                        ? 'bg-slate-800 text-emerald-300 border-emerald-700/60 font-medium' 
-                        : 'bg-slate-900 text-slate-300 border-slate-800'
-                }`;
-                badge.textContent = (isMatch ? '✓ ' : '') + t;
-                modalTechList.appendChild(badge);
-            });
+            const matchEl = document.getElementById('modal-match');
+            matchEl.textContent = match + '% afinidad';
+            matchEl.className = 'px-2 py-0.5 text-[10px] font-bold rounded-md ' + (match >= 80 ? 'bg-emerald-950/50 border border-emerald-800/40 text-emerald-400' : match >= 50 ? 'bg-indigo-950/40 border border-indigo-900/50 text-indigo-400' : 'bg-[#0d0f18] border border-[#1a1d2e] text-zinc-500');
 
-            // Clean full description text
-            const desc = cleanTextOnly(job.fullDescription || job.shortDescription || 'Sin descripción disponible.');
-            document.getElementById('modal-description').textContent = desc;
-            document.getElementById('modal-external-link').href = job.url;
+            // Salary
+            const salaryEl = document.getElementById('modal-salary');
+            if (job.salaryMin || job.salaryMax) {
+                salaryEl.classList.remove('hidden');
+                const fmt = v => new Intl.NumberFormat('es-ES').format(v);
+                salaryEl.textContent = job.salaryMin && job.salaryMax
+                    ? `${fmt(job.salaryMin)} – ${fmt(job.salaryMax)} ${job.salaryCurrency || 'EUR'}/año`
+                    : `Desde ${fmt(job.salaryMin || job.salaryMax)} ${job.salaryCurrency || 'EUR'}/año`;
+            } else { salaryEl.classList.add('hidden'); }
 
-            const modal = document.getElementById('detail-modal');
-            const container = document.getElementById('modal-container');
-            modal.classList.remove('hidden');
+            // Techs
+            const techsEl = document.getElementById('modal-techs');
+            techsEl.innerHTML = (job.requiredTechnologies || []).map(t => {
+                const isMatch = uniqueStack.some(st => st.toLowerCase() === t.toLowerCase());
+                return `<span class="px-2 py-1 text-[10px] rounded-md border ${isMatch ? 'bg-indigo-950/40 border-indigo-800/50 text-indigo-300 font-semibold' : 'bg-[#0d0f18] border-[#1a1d2e] text-zinc-400'}">${esc(t)}</span>`;
+            }).join('');
 
+            document.getElementById('modal-desc').textContent = cleanText(job.fullDescription || job.shortDescription || 'Sin descripción disponible.');
+            document.getElementById('modal-link').href = job.url;
+
+            const modalEl = document.getElementById('modal');
+            const panel = document.getElementById('modal-panel');
+            modalEl.classList.remove('hidden');
+            modalEl.classList.add('flex');
             requestAnimationFrame(() => {
-                container.classList.remove('scale-95', 'opacity-0');
-                container.classList.add('scale-100', 'opacity-100');
+                panel.classList.remove('closed');
+                panel.classList.add('open');
             });
         }
 
         function closeModal() {
-            const modal = document.getElementById('detail-modal');
-            const container = document.getElementById('modal-container');
-            container.classList.remove('scale-100', 'opacity-100');
-            container.classList.add('scale-95', 'opacity-0');
+            const modalEl = document.getElementById('modal');
+            const panel = document.getElementById('modal-panel');
+            panel.classList.remove('open');
+            panel.classList.add('closed');
             setTimeout(() => {
-                modal.classList.add('hidden');
-                selectedJob = null;
-            }, 150);
+                modalEl.classList.add('hidden');
+                modalEl.classList.remove('flex');
+                activeModal = null;
+            }, 200);
         }
 
         function handleBackdropClick(e) {
-            if (e.target.id === 'detail-modal') {
-                closeModal();
-            }
+            if (e.target.id === 'modal') closeModal();
         }
 
-        async function modalUpdateStatus(newStatus) {
-            if (!selectedJob) return;
-            await updateOfferStatus(selectedJob.id, newStatus);
-            document.getElementById('modal-status-badge').innerHTML = getStatusBadge(newStatus);
-            selectedJob.status = newStatus;
+        async function modalAction(newStatus) {
+            if (!activeModal) return;
+            await setJobStatus(activeModal.id, newStatus);
+            document.getElementById('modal-match').textContent = newStatus;
         }
 
-        function cleanTextOnly(text) {
-            if (!text) return '';
-            return text
-                .replace(/<[^>]*>/g, ' ')
-                .replace(/&nbsp;/g, ' ')
-                .replace(/&amp;/g, '&')
-                .replace(/&lt;/g, '<')
-                .replace(/&gt;/g, '>')
-                .replace(/&quot;/g, '"')
-                .replace(/&#39;/g, "'")
-                .replace(/&rsquo;/g, "'")
-                .replace(/&lsquo;/g, "'")
-                .replace(/&rdquo;/g, '"')
-                .replace(/&ldquo;/g, '"')
-                .replace(/&bull;/g, '•')
-                .replace(/&middot;/g, '•')
-                .replace(/&ndash;/g, '-')
-                .replace(/&mdash;/g, '—')
-                .replace(/<[^>]*>/g, ' ')
-                .replace(/\s+/g, ' ')
-                .trim();
-        }
-
-        function getStatusBadge(status) {
-            switch(status) {
-                case 'NUEVA':
-                    return '<span class="text-[11px] font-medium px-2 py-0.5 rounded bg-indigo-950 text-indigo-300 border border-indigo-800">Nueva</span>';
-                case 'VISTA':
-                    return '<span class="text-[11px] font-medium px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700">Revisada</span>';
-                case 'APLICADA':
-                    return '<span class="text-[11px] font-semibold px-2 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-800">Postulado</span>';
-                case 'DESCARTADA':
-                    return '<span class="text-[11px] font-medium px-2 py-0.5 rounded bg-rose-950/60 text-rose-400 border border-rose-900">Descartada</span>';
-                default:
-                    return '';
-            }
-        }
-
-        function getMatchBadge(matchPct) {
-            if (matchPct >= 80) {
-                return `<span class="text-[11px] font-semibold px-2 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-800">${matchPct}% afinidad</span>`;
-            } else if (matchPct >= 50) {
-                return `<span class="text-[11px] font-medium px-2 py-0.5 rounded bg-indigo-950 text-indigo-300 border border-indigo-900">${matchPct}% afinidad</span>`;
-            } else {
-                return `<span class="text-[11px] font-normal px-2 py-0.5 rounded bg-slate-900 text-slate-400 border border-slate-800">${matchPct}%</span>`;
-            }
-        }
-
-        function getSourceBadge(source) {
-            switch(source) {
-                case 'JOBICY':
-                    return '<span class="text-[10px] uppercase font-bold px-1.5 py-0.5 rounded bg-blue-950 text-blue-300 border border-blue-800">Jobicy</span>';
-                case 'REMOTIVE':
-                    return '<span class="text-[10px] uppercase font-bold px-1.5 py-0.5 rounded bg-purple-950 text-purple-300 border border-purple-800">Remotive</span>';
-                case 'ARBEITNOW':
-                    return '<span class="text-[10px] uppercase font-bold px-1.5 py-0.5 rounded bg-amber-950 text-amber-300 border border-amber-800">Arbeitnow</span>';
-                case 'WEWORKREMOTELY':
-                    return '<span class="text-[10px] uppercase font-bold px-1.5 py-0.5 rounded bg-teal-950 text-teal-300 border border-teal-800">WWR RSS</span>';
-                default:
-                    return '<span class="text-[10px] uppercase font-bold px-1.5 py-0.5 rounded bg-slate-800 text-slate-400">Web</span>';
-            }
-        }
-
-        function formatRelativeDate(dateStr) {
-            if (!dateStr) return 'Reciente';
-            const date = new Date(dateStr);
-            const now = new Date();
-            const diffHours = Math.floor((now - date) / (1000 * 60 * 60));
-            if (diffHours < 1) return 'Hace minutos';
-            if (diffHours < 24) return `Hace ${diffHours} h`;
-            const diffDays = Math.floor(diffHours / 24);
-            if (diffDays === 1) return 'Ayer';
-            if (diffDays < 30) return `Hace ${diffDays} d`;
-            return date.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
-        }
-
-        async function updateOfferStatus(id, newStatus) {
+        // =====================================================================
+        // API ACTIONS
+        // =====================================================================
+        async function setJobStatus(id, status) {
             try {
-                const res = await fetch(`${API_BASE}/jobs/${id}/status`, {
+                const res = await fetch(`/api/jobs/${id}/status`, {
                     method: 'PATCH',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ status: newStatus })
+                    body: JSON.stringify({ status })
                 });
-
                 if (res.ok) {
-                    showToast(`Estado actualizado: ${newStatus}`, "success");
+                    showToast(status === 'APLICADA' ? 'Marcado como Postulado' : status === 'DESCARTADA' ? 'Oferta descartada' : 'Estado actualizado', 'success');
                     fetchStats();
                     fetchJobs();
-                } else {
-                    throw new Error();
                 }
-            } catch (err) {
-                showToast("No se pudo actualizar el estado", "error");
-            }
+            } catch(e) { showToast('Error al actualizar estado', 'error'); }
         }
 
-        async function handleOpenOffer(id) {
-            try {
-                await fetch(`${API_BASE}/jobs/${id}/view`, { method: 'POST' });
-                setTimeout(() => {
-                    fetchStats();
-                    fetchJobs();
-                }, 500);
-            } catch (err) {}
+        function markViewed(id) {
+            fetch(`/api/jobs/${id}/view`, { method: 'POST' }).catch(() => {});
         }
 
         async function triggerSync() {
-            const btn = document.getElementById('btn-sync');
-            const spinner = document.getElementById('sync-spinner');
+            const btn = document.getElementById('sync-btn');
+            const icon = document.getElementById('sync-icon');
             btn.disabled = true;
-            spinner.classList.add('animate-spin');
-
-            showToast("Buscando nuevas ofertas en fuentes externas...", "info");
-
+            icon.classList.add('animate-spin');
+            showToast('Sincronizando fuentes de empleo...', 'info');
             try {
-                const res = await fetch(`${API_BASE}/sync`, { method: 'POST' });
+                const res = await fetch('/api/sync', { method: 'POST' });
                 if (res.ok) {
-                    const result = await res.json();
-                    showToast(`Sincronización finalizada: ${result.newSaved} ofertas nuevas añadidas`, "success");
+                    const r = await res.json();
+                    showToast(`Sincronización completada: ${r.newSaved} ofertas nuevas`, 'success');
                     fetchStats();
                     fetchJobs();
-                } else {
-                    throw new Error();
                 }
-            } catch (err) {
-                showToast("Error durante la sincronización", "error");
-            } finally {
-                btn.disabled = false;
-                spinner.classList.remove('animate-spin');
+            } catch(e) { showToast('Error durante la sincronización', 'error'); }
+            finally { btn.disabled = false; icon.classList.remove('animate-spin'); }
+        }
+
+        async function fetchStats() {
+            try {
+                const res = await fetch('/api/jobs/stats');
+                if (!res.ok) return;
+                const s = await res.json();
+                document.getElementById('cnt-total').textContent = `(${s.total||0})`;
+                document.getElementById('cnt-nuevas').textContent = `(${s.nuevas||0})`;
+                document.getElementById('cnt-vistas').textContent = `(${s.vistas||0})`;
+                document.getElementById('cnt-aplicadas').textContent = `(${s.aplicadas||0})`;
+                document.getElementById('cnt-descartadas').textContent = `(${s.descartadas||0})`;
+            } catch(e) {}
+        }
+
+        async function checkHealth() {
+            try {
+                const res = await fetch('/api/health');
+                const d = await res.json();
+                document.getElementById('server-dot').className = 'w-1.5 h-1.5 rounded-full bg-emerald-500';
+                document.getElementById('server-status').textContent = `Online · ${d.profile || 'prod'}`;
+            } catch(e) {
+                document.getElementById('server-status').textContent = 'Desconectado';
             }
         }
 
-        function checkHealth() {
-            fetch(`${API_BASE}/health`)
-                .then(res => res.json())
-                .then(data => {
-                    document.getElementById('status-text').textContent = `Online (${data.profile})`;
-                })
-                .catch(() => {
-                    document.getElementById('status-text').textContent = "Desconectado";
-                });
-        }
-
-        function fetchStats() {
-            fetch(`${API_BASE}/jobs/stats`)
-                .then(res => res.json())
-                .then(stats => {
-                    document.getElementById('count-total').textContent = stats.total || 0;
-                    document.getElementById('count-nuevas').textContent = stats.nuevas || 0;
-                    document.getElementById('count-vistas').textContent = stats.vistas || 0;
-                    document.getElementById('count-aplicadas').textContent = stats.aplicadas || 0;
-                    document.getElementById('count-descartadas').textContent = stats.descartadas || 0;
-                })
-                .catch(e => {});
+        // =====================================================================
+        // PAGINATION
+        // =====================================================================
+        function updatePagination(data) {
+            document.getElementById('btn-prev').disabled = data.first;
+            document.getElementById('btn-next').disabled = data.last;
+            document.getElementById('page-info').textContent = `Pág. ${(data.number||0)+1} / ${data.totalPages||1}`;
         }
 
         function changePage(delta) {
-            currentPage += delta;
+            state.page += delta;
             fetchJobs();
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
-        function updatePagination(data) {
-            const prevBtn = document.getElementById('btn-prev-page');
-            const nextBtn = document.getElementById('btn-next-page');
-            const pageInfo = document.getElementById('page-info');
-
-            prevBtn.disabled = data.first;
-            nextBtn.disabled = data.last;
-            pageInfo.textContent = `Página ${(data.number || 0) + 1} de ${data.totalPages || 1}`;
-        }
-
-        function showLoading(show) {
-            document.getElementById('loading-state').classList.toggle('hidden', !show);
+        // =====================================================================
+        // UI HELPERS
+        // =====================================================================
+        function showSkeletons(show) {
+            document.getElementById('skeleton-grid').classList.toggle('hidden', !show);
             if (show) {
                 document.getElementById('job-grid').innerHTML = '';
                 document.getElementById('empty-state').classList.add('hidden');
             }
         }
 
-        function showToast(message, type = 'info') {
-            const container = document.getElementById('toast-container');
-            const toast = document.createElement('div');
-            
-            let bgClass = "bg-slate-900 border-slate-700 text-slate-100";
-            if (type === 'success') {
-                bgClass = "bg-slate-900 border-emerald-700 text-emerald-300";
-            } else if (type === 'error') {
-                bgClass = "bg-slate-900 border-rose-700 text-rose-300";
-            }
-
-            toast.className = `pointer-events-auto p-3.5 rounded-xl border shadow-xl flex items-center gap-2 text-xs font-medium transition-all duration-200 transform translate-y-2 opacity-0 ${bgClass}`;
-            toast.textContent = message;
-
-            container.appendChild(toast);
-
-            requestAnimationFrame(() => {
-                toast.classList.remove('translate-y-2', 'opacity-0');
-            });
-
-            setTimeout(() => {
-                toast.classList.add('opacity-0', 'translate-x-4');
-                setTimeout(() => toast.remove(), 200);
-            }, 3200);
+        function buildDisplayLocation(job) {
+            if (job.provinceOrCity && job.autonomousCommunity) return `${job.provinceOrCity} — ${job.autonomousCommunity}`;
+            if (job.autonomousCommunity) return job.autonomousCommunity + ', ' + (job.country || '');
+            if (job.country && job.country !== 'Worldwide') return job.country;
+            return job.location || (job.isRemote ? 'Remoto' : 'No especificado');
         }
 
-        function escapeHtml(text) {
-            if (!text) return '';
+        function getSourceBadge(source) {
             const map = {
-                '&': '&amp;',
-                '<': '&lt;',
-                '>': '&gt;',
-                '"': '&quot;',
-                "'": '&#039;'
+                'JOBICY': 'bg-blue-950/50 border-blue-800/40 text-blue-400',
+                'REMOTIVE': 'bg-violet-950/50 border-violet-800/40 text-violet-400',
+                'ARBEITNOW': 'bg-amber-950/50 border-amber-800/40 text-amber-400',
+                'WEWORKREMOTELY': 'bg-teal-950/50 border-teal-800/40 text-teal-400',
+                'INFOJOBS': 'bg-sky-950/50 border-sky-800/40 text-sky-400',
+                'TECNOEMPLEO': 'bg-orange-950/50 border-orange-800/40 text-orange-400',
+                'MANFRED': 'bg-indigo-950/50 border-indigo-800/40 text-indigo-400',
             };
-            return text.toString().replace(/[&<>"']/g, m => map[m]);
+            const cls = map[source] || 'bg-[#0d0f18] border-[#1a1d2e] text-zinc-500';
+            const labels = { 'JOBICY':'Jobicy','REMOTIVE':'Remotive','ARBEITNOW':'Arbeitnow','WEWORKREMOTELY':'WWR','INFOJOBS':'InfoJobs','TECNOEMPLEO':'Tecnoempleo','MANFRED':'Manfred' };
+            return `<span class="px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-widest rounded-md border ${cls}">${labels[source]||source}</span>`;
+        }
+
+        function getStatusBadge(status) {
+            const map = {
+                'NUEVA': 'bg-indigo-950/40 border-indigo-900/50 text-indigo-400',
+                'VISTA': 'bg-[#0d0f18] border-[#1a1d2e] text-zinc-500',
+                'APLICADA': 'bg-emerald-950/40 border-emerald-900/50 text-emerald-400',
+                'DESCARTADA': 'bg-[#0d0f18] border-[#1a1d2e] text-zinc-600 line-through',
+            };
+            const labels = {'NUEVA':'Nueva','VISTA':'Revisada','APLICADA':'Postulado','DESCARTADA':'Descartada'};
+            return `<span class="shrink-0 px-2 py-0.5 text-[10px] font-semibold rounded-md border ${map[status]||''}">${labels[status]||status}</span>`;
+        }
+
+        function getModalityLabel(modality) {
+            const map = {
+                'REMOTO_100': 'bg-emerald-950/30 border-emerald-900/40 text-emerald-500',
+                'HIBRIDO': 'bg-amber-950/30 border-amber-900/40 text-amber-500',
+                'PRESENCIAL': 'bg-[#0d0f18] border-[#1a1d2e] text-zinc-500',
+            };
+            const labels = { 'REMOTO_100': 'Remoto', 'HIBRIDO': 'Híbrido', 'PRESENCIAL': 'Presencial' };
+            if (!modality) return '';
+            return `<span class="px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider rounded-md border ${map[modality]||''}">${labels[modality]||modality}</span>`;
+        }
+
+        function relDate(dateStr) {
+            if (!dateStr) return 'Reciente';
+            const diff = (new Date() - new Date(dateStr)) / (1000*60*60);
+            if (diff < 1) return 'Hace minutos';
+            if (diff < 24) return `Hace ${Math.floor(diff)}h`;
+            const d = Math.floor(diff/24);
+            if (d === 1) return 'Ayer';
+            if (d < 30) return `Hace ${d}d`;
+            return new Date(dateStr).toLocaleDateString('es-ES', { day:'numeric', month:'short' });
+        }
+
+        function cleanText(text) {
+            if (!text) return '';
+            return text
+                .replace(/<[^>]*>/g, ' ')
+                .replace(/&[a-z]+;/g, c => ({'&amp;':'&','&lt;':'<','&gt;':'>','&quot;':'"','&nbsp;':' ','&bull;':'•','&mdash;':'—','&ndash;':'-'}[c]||' '))
+                .replace(/\s+/g, ' ')
+                .trim();
+        }
+
+        function esc(s) {
+            if (!s) return '';
+            return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
+        }
+
+        function showToast(msg, type = 'info') {
+            const c = document.getElementById('toast-container');
+            const t = document.createElement('div');
+            const colors = { success: 'border-emerald-800/50 text-emerald-300', error: 'border-rose-800/50 text-rose-300', info: 'border-[#1a1d2e] text-zinc-300' };
+            t.className = `pointer-events-auto toast-enter px-4 py-3 rounded-xl surface border shadow-2xl text-xs font-medium ${colors[type]||colors.info}`;
+            t.textContent = msg;
+            c.appendChild(t);
+            setTimeout(() => { t.style.opacity='0'; t.style.transform='translateY(4px)'; t.style.transition='all 0.2s ease'; setTimeout(()=>t.remove(),220); }, 3000);
         }
     </script>
 </body>

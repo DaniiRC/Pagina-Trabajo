@@ -1,5 +1,6 @@
 package com.jobaggregator.personal.dto;
 
+import com.jobaggregator.personal.model.JobModality;
 import com.jobaggregator.personal.model.JobOffer;
 import com.jobaggregator.personal.model.JobSource;
 import com.jobaggregator.personal.model.JobStatus;
@@ -25,10 +26,19 @@ public class JobOfferResponseDto {
     private String url;
     private LocalDateTime publishedDate;
     private Set<String> requiredTechnologies;
+    private Set<String> studyLevels;
     private JobStatus status;
     private JobSource source;
+    private JobModality modality;
     private Boolean isRemote;
     private String location;
+    private String continent;
+    private String country;
+    private String autonomousCommunity;
+    private String provinceOrCity;
+    private Double salaryMin;
+    private Double salaryMax;
+    private String salaryCurrency;
     private LocalDateTime createdAt;
 
     public static JobOfferResponseDto fromEntity(JobOffer entity) {
@@ -43,10 +53,19 @@ public class JobOfferResponseDto {
                 .url(entity.getUrl())
                 .publishedDate(entity.getPublishedDate())
                 .requiredTechnologies(entity.getRequiredTechnologies())
+                .studyLevels(entity.getStudyLevels())
                 .status(entity.getStatus())
                 .source(entity.getSource())
+                .modality(entity.getModality())
                 .isRemote(entity.getIsRemote())
                 .location(entity.getLocation())
+                .continent(entity.getContinent())
+                .country(entity.getCountry())
+                .autonomousCommunity(entity.getAutonomousCommunity())
+                .provinceOrCity(entity.getProvinceOrCity())
+                .salaryMin(entity.getSalaryMin())
+                .salaryMax(entity.getSalaryMax())
+                .salaryCurrency(entity.getSalaryCurrency())
                 .createdAt(entity.getCreatedAt())
                 .build();
     }

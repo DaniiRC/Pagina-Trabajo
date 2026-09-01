@@ -1,5 +1,6 @@
 package com.jobaggregator.personal.service;
 
+import com.jobaggregator.personal.model.JobModality;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
@@ -73,7 +74,6 @@ public class TechnologyParserService {
     public Set<String> extractTechnologies(String title, String description, Collection<String> existingTags) {
         Set<String> detected = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
 
-        // 1. Process explicit tags provided by the API
         if (existingTags != null) {
             for (String tag : existingTags) {
                 if (tag == null || tag.isBlank()) continue;
@@ -91,7 +91,6 @@ public class TechnologyParserService {
             }
         }
 
-        // 2. Scan title and description text with regex patterns
         String combinedText = (title != null ? title : "") + " " + (description != null ? description : "");
         for (Map.Entry<String, Pattern> entry : TECH_PATTERNS.entrySet()) {
             if (entry.getValue().matcher(combinedText).find()) {
@@ -100,6 +99,75 @@ public class TechnologyParserService {
         }
 
         return detected;
+    }
+
+    public Set<String> extractStudyLevels(String title, String description, Set<String> technologies) {
+        Set<String> studies = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
+        String combined = ((title != null ? title : "") + " " + (description != null ? description : "")).toLowerCase();
+
+        // DAM check
+        if (technologies.stream().anyMatch(t -> List.of("Kotlin", "Flutter", "Dart", "Swift", "SwiftUI", "React Native", "Android", "iOS").contains(t)) ||
+            combined.contains("dam") || combined.contains("multiplataforma") || combined.contains("mobile") || combined.contains("movil")) {
+            studies.add("DAM");
+        }
+
+        // DAW check
+        if (technologies.stream().anyMatch(t -> List.of("React", "Vue.js", "Angular", "Node.js", "TypeScript", "JavaScript", "PHP", "Spring Boot").contains(t)) ||
+            combined.contains("daw") || combined.contains("frontend") || combined.contains("fullstack") || combined.contains("web")) {
+            studies.add("DAW");
+        }
+
+        // ASIR check
+        if (technologies.stream().anyMatch(t -> List.of("Linux", "Redes/Networking", "Sysadmin", "Bash/Shell", "PowerShell", "Ciberseguridad", "Nginx", "Apache").contains(t)) ||
+            combined.contains("asir") || combined.contains("sistemas") || combined.contains("administrador de sistemas") || combined.contains("redes")) {
+            studies.add("ASIR");
+        }
+
+        // SMR check
+        if (combined.contains("smr") || combined.contains("soporte") || combined.contains("helpdesk") || combined.contains("tecnico microinformatico") || combined.contains("mantenimiento")) {
+            studies.add("SMR");
+        }
+
+        // DEVOPS check
+        if (technologies.stream().anyMatch(t -> List.of("Docker", "Kubernetes", "DevOps", "CI/CD", "Terraform", "Ansible", "AWS", "Azure", "GCP").contains(t)) ||
+            combined.contains("devops") || combined.contains("cloud") || combined.contains("sre") || combined.contains("infraestructura")) {
+            studies.add("DEVOPS");
+        }
+
+        // Grado / Ingeniería Informática check
+        if (combined.contains("grado") || combined.contains("ingenieria") || combined.contains("computer science") || combined.contains("ingeniero") || combined.contains("software engineer") || combined.contains("arquitecto")) {
+            studies.add("GRADO_INFORMATICA");
+            studies.add("INGENIERIA");
+        }
+
+        // If no explicit study found, assign generic baseline matching
+        if (studies.isEmpty()) {
+            if (technologies.contains("Java") || technologies.contains("Python") || technologies.contains("SQL")) {
+                studies.add("DAM");
+                studies.add("DAW");
+                studies.add("GRADO_INFORMATICA");
+            } else {
+                studies.add("SIN_ESTUDIOS");
+            }
+        }
+
+        return studies;
+    }
+
+    public JobModality inferModality(Boolean isRemote, String location, String text) {
+        String combined = (location != null ? location : "") + " " + (text != null ? text : "");
+        String norm = SpanishGeographyService.removeAccents(combined.toLowerCase());
+
+        if (norm.contains("hibrido") || norm.contains("hybrid") || norm.contains("semi-presencial")) {
+            return JobModality.HIBRIDO;
+        }
+        if (Boolean.TRUE.equals(isRemote) || norm.contains("100% remoto") || norm.contains("remote") || norm.contains("remoto") || norm.contains("teletrabajo") || norm.contains("worldwide")) {
+            return JobModality.REMOTO_100;
+        }
+        if (norm.contains("presencial") || norm.contains("on-site") || norm.contains("onsite")) {
+            return JobModality.PRESENCIAL;
+        }
+        return Boolean.TRUE.equals(isRemote) ? JobModality.REMOTO_100 : JobModality.HIBRIDO;
     }
 
     public String cleanHtmlDescription(String rawHtml) {

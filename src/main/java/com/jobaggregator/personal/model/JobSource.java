@@ -5,6 +5,9 @@ public enum JobSource {
     ARBEITNOW,
     WEWORKREMOTELY,
     JOBICY,
-    SPAIN_TECH
+    INFOJOBS,
+    TECNOEMPLEO,
+    MANFRED
 }
+
 

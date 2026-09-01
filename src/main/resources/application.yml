@@ -24,3 +24,16 @@ jobs:
       urls:
         - "https://weworkremotely.com/categories/remote-programming-jobs.rss"
         - "https://weworkremotely.com/categories/remote-devops-sysadmin-jobs.rss"
+    jobicy:
+      enabled: true
+    tecnoempleo:
+      enabled: true
+    manfred:
+      enabled: true
+
+# InfoJobs API credentials (set via environment variables in Render)
+infojobs:
+  client:
+    id: "${INFOJOBS_CLIENT_ID:}"
+    secret: "${INFOJOBS_CLIENT_SECRET:}"
+
