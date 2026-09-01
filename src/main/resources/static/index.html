@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TechJob Aggregator | Portal Personal de Empleo Técnico</title>
+    <title>TechJob Portal | Agregador Profesional de Empleo Técnico</title>
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -16,17 +16,13 @@
             theme: {
                 extend: {
                     fontFamily: {
-                        sans: ['"Plus Jakarta Sans"', 'sans-serif'],
-                        display: ['Outfit', 'sans-serif'],
+                        sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
                     },
                     colors: {
-                        brand: {
-                            50: '#eef2ff',
-                            100: '#e0e7ff',
-                            500: '#6366f1',
-                            600: '#4f46e5',
-                            700: '#4338ca',
-                            900: '#312e81',
+                        slate: {
+                            850: '#111827',
+                            900: '#0f172a',
+                            950: '#070b14',
                         }
                     }
                 }
@@ -35,110 +31,101 @@
     </script>
     <style>
         ::-webkit-scrollbar {
-            width: 7px;
-            height: 7px;
+            width: 6px;
+            height: 6px;
         }
         ::-webkit-scrollbar-track {
-            background: #090d16;
+            background: #070b14;
         }
         ::-webkit-scrollbar-thumb {
-            background: #232f48;
-            border-radius: 4px;
+            background: #1e293b;
+            border-radius: 3px;
         }
         ::-webkit-scrollbar-thumb:hover {
-            background: #334366;
+            background: #334155;
         }
-        .glass-card {
-            background: rgba(15, 23, 42, 0.85);
-            backdrop-filter: blur(16px);
-            border: 1px solid rgba(255, 255, 255, 0.08);
+        .card-pro {
+            background-color: #0d131f;
+            border: 1px solid #1e293b;
         }
-        .glass-header {
-            background: rgba(8, 12, 22, 0.9);
-            backdrop-filter: blur(20px);
-            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        .card-pro:hover {
+            border-color: #334155;
         }
-        .modal-backdrop {
-            background: rgba(4, 7, 15, 0.8);
+        .header-pro {
+            background-color: rgba(7, 11, 20, 0.92);
             backdrop-filter: blur(12px);
+            border-bottom: 1px solid #1e293b;
+        }
+        .modal-overlay {
+            background-color: rgba(3, 6, 12, 0.78);
+            backdrop-filter: blur(8px);
         }
     </style>
 </head>
-<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col font-sans antialiased selection:bg-indigo-500 selection:text-white">
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col font-sans text-sm antialiased">
 
     <!-- Toast Notification Container -->
-    <div id="toast-container" class="fixed bottom-6 right-6 z-50 flex flex-col gap-3 max-w-md w-full pointer-events-none"></div>
+    <div id="toast-container" class="fixed bottom-6 right-6 z-50 flex flex-col gap-2 max-w-sm w-full pointer-events-none"></div>
 
-    <!-- Detail Modal Dialog -->
-    <div id="detail-modal" class="fixed inset-0 z-50 modal-backdrop hidden flex items-center justify-center p-3 sm:p-6 overflow-y-auto" onclick="handleBackdropClick(event)">
-        <div id="modal-container" class="glass-card max-w-3xl w-full rounded-3xl p-6 sm:p-8 flex flex-col max-h-[90vh] shadow-2xl shadow-indigo-950/50 border border-slate-700/60 transition-all duration-300 transform scale-95 opacity-0 my-auto">
+    <!-- Detail Modal -->
+    <div id="detail-modal" class="fixed inset-0 z-50 modal-overlay hidden flex items-center justify-center p-4 sm:p-6 overflow-y-auto" onclick="handleBackdropClick(event)">
+        <div id="modal-container" class="card-pro max-w-3xl w-full rounded-2xl p-6 sm:p-8 flex flex-col max-h-[88vh] shadow-2xl border border-slate-700 transition-all duration-200 transform scale-95 opacity-0 my-auto">
             
             <!-- Modal Header -->
             <div class="flex items-start justify-between gap-4 pb-4 border-b border-slate-800">
-                <div class="flex items-start gap-4">
-                    <div id="modal-company-avatar" class="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-gradient-to-tr from-indigo-600 to-emerald-500 flex items-center justify-center text-xl font-bold text-white shadow-lg shadow-indigo-500/20 shrink-0">
-                        🏢
+                <div class="flex flex-col gap-1.5">
+                    <div class="flex items-center gap-2 flex-wrap">
+                        <span id="modal-source-badge" class="px-2 py-0.5 text-xs font-medium rounded bg-slate-800 text-slate-300 border border-slate-700"></span>
+                        <span id="modal-match-badge" class="px-2 py-0.5 text-xs font-semibold rounded bg-emerald-950 text-emerald-300 border border-emerald-800"></span>
+                        <span id="modal-status-badge"></span>
                     </div>
-                    <div class="flex flex-col gap-1">
-                        <div class="flex items-center gap-2 flex-wrap">
-                            <span id="modal-source-badge"></span>
-                            <span id="modal-match-badge" class="px-2.5 py-0.5 text-xs font-bold rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">🎯 Match</span>
-                            <span id="modal-status-badge"></span>
-                        </div>
-                        <h2 id="modal-title" class="text-lg sm:text-xl font-bold font-display text-white leading-snug"></h2>
-                        <div class="flex items-center gap-2 text-xs text-slate-400 flex-wrap">
-                            <span id="modal-company" class="font-semibold text-slate-200"></span>
-                            <span>•</span>
-                            <span id="modal-location"></span>
-                            <span>•</span>
-                            <span id="modal-date"></span>
-                        </div>
+                    <h2 id="modal-title" class="text-lg sm:text-xl font-bold text-white leading-snug"></h2>
+                    <div class="flex items-center gap-3 text-xs text-slate-400 flex-wrap">
+                        <span id="modal-company" class="font-semibold text-slate-200"></span>
+                        <span>•</span>
+                        <span id="modal-location"></span>
+                        <span>•</span>
+                        <span id="modal-date"></span>
                     </div>
                 </div>
 
-                <button onclick="closeModal()" class="p-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-white transition-colors cursor-pointer shrink-0">
+                <button onclick="closeModal()" class="p-2 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-white transition-colors cursor-pointer shrink-0" title="Cerrar">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
                     </svg>
                 </button>
             </div>
 
-            <!-- Modal Body (Scrollable) -->
-            <div class="flex-1 overflow-y-auto py-5 pr-1 space-y-5">
-                
-                <!-- Required Technologies Chips -->
+            <!-- Modal Content -->
+            <div class="flex-1 overflow-y-auto py-5 space-y-4">
                 <div>
-                    <h4 class="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2.5">Tecnologías & Requisitos Detectados</h4>
-                    <div id="modal-tech-list" class="flex flex-wrap gap-2"></div>
+                    <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider block mb-2">Requisitos y Tecnologías</span>
+                    <div id="modal-tech-list" class="flex flex-wrap gap-1.5"></div>
                 </div>
 
-                <!-- Full Clean Description -->
                 <div>
-                    <h4 class="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2.5">Descripción Completa del Puesto</h4>
-                    <div id="modal-description" class="text-sm text-slate-300 leading-relaxed space-y-3 bg-slate-900/60 p-4 rounded-2xl border border-slate-800/80 whitespace-pre-line font-normal"></div>
+                    <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider block mb-2">Descripción del Puesto</span>
+                    <div id="modal-description" class="text-xs sm:text-sm text-slate-300 leading-relaxed bg-slate-900/70 p-4 rounded-xl border border-slate-800 whitespace-pre-line font-normal"></div>
                 </div>
-
             </div>
 
-            <!-- Modal Footer / Actions -->
+            <!-- Modal Actions -->
             <div class="pt-4 border-t border-slate-800 flex items-center justify-between gap-3 flex-wrap">
-                <!-- Status Action Buttons -->
                 <div class="flex items-center gap-2">
-                    <button id="btn-modal-vista" onclick="modalUpdateStatus('VISTA')" class="px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-sky-500/20 hover:text-sky-300 text-slate-300 border border-slate-800 text-xs font-semibold transition-all cursor-pointer">
-                        👁️ Vista
+                    <button id="btn-modal-vista" onclick="modalUpdateStatus('VISTA')" class="px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-700 text-xs font-medium transition-colors cursor-pointer">
+                        Marcar como Revisada
                     </button>
-                    <button id="btn-modal-aplicada" onclick="modalUpdateStatus('APLICADA')" class="px-3.5 py-2 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 text-xs font-semibold transition-all cursor-pointer">
-                        🚀 Marcar como Aplicada
+                    <button id="btn-modal-aplicada" onclick="modalUpdateStatus('APLICADA')" class="px-3.5 py-1.5 rounded-lg bg-emerald-900/60 hover:bg-emerald-800/80 text-emerald-200 border border-emerald-700 text-xs font-semibold transition-colors cursor-pointer">
+                        Marcar como Postulado
                     </button>
-                    <button id="btn-modal-descartar" onclick="modalUpdateStatus('DESCARTADA')" class="px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-rose-500/20 hover:text-rose-300 text-slate-400 border border-slate-800 text-xs font-semibold transition-all cursor-pointer">
-                        🗑️ Descartar
+                    <button id="btn-modal-descartar" onclick="modalUpdateStatus('DESCARTADA')" class="px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-rose-950/60 hover:text-rose-300 text-slate-400 border border-slate-800 text-xs font-medium transition-colors cursor-pointer">
+                        Descartar
                     </button>
                 </div>
 
-                <!-- Open External Link Button -->
-                <a id="modal-external-link" href="#" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 px-5 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-emerald-600 hover:from-indigo-500 hover:to-emerald-500 text-white text-xs sm:text-sm font-semibold shadow-lg shadow-indigo-600/30 transition-all cursor-pointer">
-                    <span>Ir a la Oferta Oficial</span>
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <a id="modal-external-link" href="#" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs sm:text-sm font-semibold transition-colors cursor-pointer">
+                    <span>Abrir en portal original</span>
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
                     </svg>
                 </a>
@@ -147,560 +134,398 @@
         </div>
     </div>
 
-    <!-- Top Navigation / Header -->
-    <header class="glass-header sticky top-0 z-40 px-4 lg:px-8 py-3.5">
-        <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-4">
+    <!-- Header Navigation -->
+    <header class="header-pro sticky top-0 z-40 px-4 lg:px-8 py-3">
+        <div class="max-w-7xl mx-auto flex items-center justify-between gap-4">
             
-            <!-- Brand Logo & Title -->
-            <div class="flex items-center gap-3.5">
-                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 via-indigo-500 to-emerald-400 p-0.5 shadow-lg shadow-indigo-500/20 flex items-center justify-center">
-                    <div class="w-full h-full bg-slate-950 rounded-[10px] flex items-center justify-center">
-                        <svg class="w-5 h-5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
-                        </svg>
-                    </div>
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center font-bold text-white text-sm shadow-md">
+                    TJ
                 </div>
                 <div>
                     <div class="flex items-center gap-2">
-                        <h1 class="text-xl font-bold font-display tracking-tight text-white">TechJob <span class="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-emerald-400">Aggregator</span></h1>
-                        <span id="profile-badge-header" class="text-[10px] uppercase tracking-wider font-bold bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 px-2.5 py-0.5 rounded-full">DAM & Sistemas</span>
+                        <h1 class="text-base font-bold text-white tracking-tight">TechJob Portal</h1>
+                        <span class="text-[11px] font-medium bg-slate-800 text-slate-300 border border-slate-700 px-2 py-0.5 rounded">Agregador Técnico</span>
                     </div>
-                    <p class="text-xs text-slate-400 hidden sm:block">Agregador inteligente con perfil personalizado, scoring de match y búsqueda por estudios</p>
                 </div>
             </div>
 
-            <!-- Server Status & Actions -->
             <div class="flex items-center gap-3">
-                <!-- Server Status -->
-                <div id="server-status" class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-xs font-medium text-slate-300">
-                    <span class="relative flex h-2 w-2">
-                        <span id="status-ping-animate" class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                        <span id="status-ping-dot" class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-                    </span>
-                    <span id="status-text">Conectado</span>
+                <div class="hidden sm:flex items-center gap-2 px-2.5 py-1 rounded-md bg-slate-900 border border-slate-800 text-xs text-slate-400">
+                    <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                    <span id="status-text">Servidor Activo</span>
                 </div>
 
-                <!-- Sync Button -->
-                <button id="btn-sync" onclick="triggerSync()" class="relative inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-500 hover:to-indigo-600 text-white text-xs sm:text-sm font-semibold shadow-lg shadow-indigo-600/25 active:scale-95 transition-all cursor-pointer">
-                    <svg id="sync-spinner" class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <button id="btn-sync" onclick="triggerSync()" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold transition-all cursor-pointer">
+                    <svg id="sync-spinner" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
                     </svg>
-                    <span>Sincronizar</span>
+                    <span>Sincronizar Ofertas</span>
                 </button>
             </div>
 
         </div>
     </header>
 
-    <!-- Main Content Container -->
-    <main class="flex-1 max-w-7xl w-full mx-auto px-4 lg:px-8 py-6 flex flex-col gap-6">
+    <!-- Main Content -->
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 lg:px-8 py-5 flex flex-col gap-4">
 
-        <!-- KPI Metrics Grid -->
-        <section class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5">
-            <div onclick="selectStatusFilter(null)" class="cursor-pointer glass-card rounded-2xl p-4 hover:border-slate-700 transition-all hover:translate-y-[-2px] group">
-                <div class="flex items-center justify-between text-slate-400 mb-2">
-                    <span class="text-xs font-semibold uppercase tracking-wider">Total</span>
-                    <span class="text-xs">📊</span>
-                </div>
-                <div class="flex items-baseline gap-2">
-                    <span id="stat-total" class="text-2xl font-extrabold font-display text-white">0</span>
-                    <span class="text-[11px] text-slate-400">ofertas</span>
-                </div>
-            </div>
-
-            <div onclick="selectStatusFilter('NUEVA')" class="cursor-pointer glass-card rounded-2xl p-4 border-indigo-500/20 bg-indigo-950/20 hover:border-indigo-500/40 transition-all hover:translate-y-[-2px] group">
-                <div class="flex items-center justify-between text-indigo-300 mb-2">
-                    <span class="text-xs font-semibold uppercase tracking-wider">Nuevas</span>
-                    <span class="text-xs">✨</span>
-                </div>
-                <div class="flex items-baseline gap-2">
-                    <span id="stat-nuevas" class="text-2xl font-extrabold font-display text-indigo-400">0</span>
-                    <span class="text-[11px] text-indigo-300/70">sin revisar</span>
-                </div>
-            </div>
-
-            <div onclick="selectStatusFilter('VISTA')" class="cursor-pointer glass-card rounded-2xl p-4 border-sky-500/20 bg-sky-950/20 hover:border-sky-500/40 transition-all hover:translate-y-[-2px] group">
-                <div class="flex items-center justify-between text-sky-300 mb-2">
-                    <span class="text-xs font-semibold uppercase tracking-wider">Vistas</span>
-                    <span class="text-xs">👁️</span>
-                </div>
-                <div class="flex items-baseline gap-2">
-                    <span id="stat-vistas" class="text-2xl font-extrabold font-display text-sky-400">0</span>
-                    <span class="text-[11px] text-sky-300/70">leídas</span>
-                </div>
-            </div>
-
-            <div onclick="selectStatusFilter('APLICADA')" class="cursor-pointer glass-card rounded-2xl p-4 border-emerald-500/20 bg-emerald-950/20 hover:border-emerald-500/40 transition-all hover:translate-y-[-2px] group">
-                <div class="flex items-center justify-between text-emerald-300 mb-2">
-                    <span class="text-xs font-semibold uppercase tracking-wider">Aplicadas</span>
-                    <span class="text-xs">🚀</span>
-                </div>
-                <div class="flex items-baseline gap-2">
-                    <span id="stat-aplicadas" class="text-2xl font-extrabold font-display text-emerald-400">0</span>
-                    <span class="text-[11px] text-emerald-300/70">candidaturas</span>
-                </div>
-            </div>
-
-            <div onclick="selectStatusFilter('DESCARTADA')" class="cursor-pointer glass-card rounded-2xl p-4 border-rose-500/20 bg-rose-950/20 hover:border-rose-500/40 transition-all hover:translate-y-[-2px] group">
-                <div class="flex items-center justify-between text-rose-300 mb-2">
-                    <span class="text-xs font-semibold uppercase tracking-wider">Descartadas</span>
-                    <span class="text-xs">🗑️</span>
-                </div>
-                <div class="flex items-baseline gap-2">
-                    <span id="stat-descartadas" class="text-2xl font-extrabold font-display text-rose-400">0</span>
-                    <span class="text-[11px] text-rose-300/70">archivadas</span>
-                </div>
-            </div>
-        </section>
-
-        <!-- Profile & Preference Center (Formulario Profesional de Estudios y Ubicación) -->
-        <section class="glass-card rounded-3xl p-6 border-indigo-500/30 shadow-xl shadow-indigo-950/20 flex flex-col gap-5">
+        <!-- Compact Professional Filter Bar -->
+        <section class="card-pro rounded-xl p-4 flex flex-col gap-3 shadow-lg">
             
-            <div class="flex items-center justify-between gap-4 flex-wrap pb-4 border-b border-slate-800">
-                <div class="flex items-center gap-3">
-                    <div class="w-9 h-9 rounded-xl bg-indigo-600/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400 text-lg">
-                        🎓
-                    </div>
-                    <div>
-                        <h2 class="text-base font-bold font-display text-white">Mi Perfil Profesional & Preferencias de Búsqueda</h2>
-                        <p class="text-xs text-slate-400">Selecciona tus estudios, tecnologías y ubicación específica para calcular automáticamente el % de compatibilidad</p>
-                    </div>
-                </div>
-
-                <div class="flex items-center gap-2">
-                    <button onclick="saveUserProfile()" class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/30 text-xs font-semibold transition-all cursor-pointer">
-                        <span>💾 Guardar Perfil</span>
-                    </button>
-                    <button onclick="resetUserProfile()" class="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-400 text-xs font-medium transition-all cursor-pointer">
-                        Restablecer
-                    </button>
-                </div>
-            </div>
-
-            <!-- Profile Configuration Form Grid -->
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+            <!-- Filters Row 1: Studies, Modality, Location & Search -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
                 
-                <!-- Col 1: Estudios / Especialidad Técnica -->
-                <div class="flex flex-col gap-2">
-                    <label class="text-xs font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
-                        <span>📚</span> Tus Estudios / Especialidad:
-                    </label>
-                    <select id="user-studies" onchange="handleStudiesChange(event)" class="w-full px-3.5 py-2.5 bg-slate-900 border border-slate-800 rounded-xl text-xs sm:text-sm text-slate-100 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none transition-all cursor-pointer">
-                        <option value="DAM">📱 Desarrollo Multiplataforma (DAM)</option>
-                        <option value="DAW">🌐 Desarrollo Web (DAW / Full-Stack)</option>
-                        <option value="ASIR">🖥️ Administración de Sistemas & Redes (ASIR)</option>
-                        <option value="DEVOPS">☁️ DevOps, Cloud & SRE</option>
-                        <option value="ING">🎓 Ingeniería Informática / Software</option>
-                        <option value="CUSTOM">✏️ Perfil Personalizado</option>
-                    </select>
-                    <p id="studies-description" class="text-[11px] text-indigo-400/90 leading-tight mt-1"></p>
-                </div>
-
-                <!-- Col 2: Modalidad de Trabajo -->
-                <div class="flex flex-col gap-2">
-                    <label class="text-xs font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
-                        <span>🏠</span> Modalidad Deseada:
-                    </label>
-                    <select id="user-modality" onchange="handlePreferenceChange()" class="w-full px-3.5 py-2.5 bg-slate-900 border border-slate-800 rounded-xl text-xs sm:text-sm text-slate-100 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none transition-all cursor-pointer">
-                        <option value="ALL">🌐 Cualquier modalidad (Remoto / Híbrido / Presencial)</option>
-                        <option value="REMOTE_ONLY">🏠 Solo 100% Remoto (Teletrabajo)</option>
-                        <option value="ONSITE_HYBRID">🏢 Presencial o Híbrido</option>
+                <!-- Studies / Specialty Filter -->
+                <div class="flex flex-col gap-1">
+                    <label class="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Perfil / Estudios:</label>
+                    <select id="filter-studies" onchange="handleFilterChange()" class="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-xs text-slate-200 focus:border-indigo-500 focus:outline-none cursor-pointer">
+                        <option value="DAM">Desarrollo Multiplataforma (DAM)</option>
+                        <option value="DAW">Desarrollo Web (DAW)</option>
+                        <option value="ASIR">Administración Sistemas & Redes (ASIR)</option>
+                        <option value="DEVOPS">DevOps & Cloud Engineering</option>
+                        <option value="ING">Ingeniería Informática / Software</option>
+                        <option value="ALL">Todos los perfiles técnicos</option>
                     </select>
                 </div>
 
-                <!-- Col 3: Ubicación Geográfica Específica -->
-                <div class="flex flex-col gap-2">
-                    <label class="text-xs font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
-                        <span>📍</span> Ubicación / País de Interés:
-                    </label>
-                    <div class="flex gap-2">
-                        <select id="user-location-preset" onchange="handleLocationPresetChange(event)" class="w-1/2 px-3 py-2.5 bg-slate-900 border border-slate-800 rounded-xl text-xs text-slate-100 focus:border-indigo-500 focus:outline-none cursor-pointer">
-                            <option value="">🌍 Cualquier País</option>
-                            <option value="España">🇪🇸 España</option>
-                            <option value="Europe">🇪🇺 Europa</option>
-                            <option value="Germany">🇩🇪 Alemania</option>
-                            <option value="UK">🇬🇧 Reino Unido</option>
-                            <option value="Worldwide">🌐 Worldwide</option>
+                <!-- Modality Filter -->
+                <div class="flex flex-col gap-1">
+                    <label class="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Modalidad:</label>
+                    <select id="filter-modality" onchange="handleFilterChange()" class="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-xs text-slate-200 focus:border-indigo-500 focus:outline-none cursor-pointer">
+                        <option value="ALL">Todas las modalidades</option>
+                        <option value="REMOTE_ONLY">100% Remoto (Teletrabajo)</option>
+                        <option value="ONSITE_HYBRID">Presencial o Híbrido</option>
+                    </select>
+                </div>
+
+                <!-- Location Filter with Spanish Presets & Input -->
+                <div class="flex flex-col gap-1">
+                    <label class="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Ubicación / Región:</label>
+                    <div class="flex gap-1.5">
+                        <select id="filter-location-preset" onchange="handleLocationPreset(event)" class="w-1/2 px-2.5 py-2 bg-slate-900 border border-slate-700 rounded-lg text-xs text-slate-200 focus:border-indigo-500 focus:outline-none cursor-pointer">
+                            <option value="">Cualquier país</option>
+                            <option value="España">España (Nacional)</option>
+                            <option value="Andalucía">Andalucía</option>
+                            <option value="Jaén">Jaén</option>
+                            <option value="Madrid">Madrid</option>
+                            <option value="Barcelona">Barcelona</option>
+                            <option value="Europe">Europa</option>
                         </select>
                         <input 
                             type="text" 
-                            id="user-location-custom" 
-                            placeholder="Ciudad/País específico..." 
-                            oninput="handlePreferenceChange()" 
-                            class="w-1/2 px-3 py-2.5 bg-slate-900 border border-slate-800 rounded-xl text-xs text-slate-100 placeholder-slate-500 focus:border-indigo-500 focus:outline-none"
+                            id="filter-location-custom" 
+                            placeholder="Ej: Jaén, Sevilla..." 
+                            oninput="handleSearchDebounce()" 
+                            class="w-1/2 px-2.5 py-2 bg-slate-900 border border-slate-700 rounded-lg text-xs text-slate-200 placeholder-slate-500 focus:border-indigo-500 focus:outline-none"
                         />
                     </div>
                 </div>
 
+                <!-- Keyword Search -->
+                <div class="flex flex-col gap-1">
+                    <label class="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Buscar por texto:</label>
+                    <div class="relative">
+                        <input 
+                            type="text" 
+                            id="search-input" 
+                            placeholder="Empresa, puesto o palabra clave..." 
+                            oninput="handleSearchDebounce()" 
+                            class="w-full pl-3 pr-8 py-2 bg-slate-900 border border-slate-700 rounded-lg text-xs text-slate-200 placeholder-slate-500 focus:border-indigo-500 focus:outline-none"
+                        />
+                        <button onclick="clearSearch()" id="btn-clear-search" class="absolute right-2 top-2 text-slate-500 hover:text-slate-300 hidden text-xs">✕</button>
+                    </div>
+                </div>
+
             </div>
 
-            <!-- Technologies Stack Selection Chips -->
-            <div class="pt-3 border-t border-slate-800/80 flex flex-col gap-2.5">
-                <div class="flex items-center justify-between flex-wrap gap-2">
-                    <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">
-                        ⚡ Tus Tecnologías & Habilidades (Marca las que dominas o te interesan):
-                    </span>
-                    <span id="selected-tech-count" class="text-[11px] text-indigo-400 font-semibold">0 seleccionadas</span>
+            <!-- Filters Row 2: Status Tabs, Sorting & Result Counters -->
+            <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-2.5 border-t border-slate-800">
+                
+                <!-- Status Tabs -->
+                <div class="flex items-center gap-1 bg-slate-950 p-1 rounded-lg border border-slate-800 text-xs font-medium overflow-x-auto">
+                    <button onclick="selectStatus(null)" id="tab-all" class="status-tab px-3 py-1 rounded text-slate-300 hover:text-white bg-slate-800 text-white font-semibold">Todas (<span id="count-total">0</span>)</button>
+                    <button onclick="selectStatus('NUEVA')" id="tab-NUEVA" class="status-tab px-3 py-1 rounded text-slate-400 hover:text-white">Nuevas (<span id="count-nuevas">0</span>)</button>
+                    <button onclick="selectStatus('VISTA')" id="tab-VISTA" class="status-tab px-3 py-1 rounded text-slate-400 hover:text-white">Revisadas (<span id="count-vistas">0</span>)</button>
+                    <button onclick="selectStatus('APLICADA')" id="tab-APLICADA" class="status-tab px-3 py-1 rounded text-slate-400 hover:text-white">Postulado (<span id="count-aplicadas">0</span>)</button>
+                    <button onclick="selectStatus('DESCARTADA')" id="tab-DESCARTADA" class="status-tab px-3 py-1 rounded text-slate-400 hover:text-white">Descartadas (<span id="count-descartadas">0</span>)</button>
                 </div>
-                <div id="profile-tech-chips" class="flex flex-wrap gap-1.5 max-h-28 overflow-y-auto pr-1"></div>
+
+                <!-- Sort Control -->
+                <div class="flex items-center gap-2 text-xs">
+                    <span class="text-slate-400 whitespace-nowrap">Ordenar por:</span>
+                    <select id="sort-select" onchange="handleSortChange(event)" class="px-2.5 py-1.5 bg-slate-900 border border-slate-700 rounded-lg text-xs text-slate-200 focus:border-indigo-500 focus:outline-none cursor-pointer">
+                        <option value="match">Mayor afinidad con mis estudios</option>
+                        <option value="date">Más recientes</option>
+                    </select>
+                </div>
+
             </div>
 
         </section>
 
-        <!-- Search & View Filters -->
-        <section class="glass-card rounded-2xl p-4 flex flex-col md:flex-row gap-3 items-stretch md:items-center justify-between">
-            
-            <!-- Search by text -->
-            <div class="relative flex-1">
-                <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-                    </svg>
-                </div>
-                <input 
-                    type="text" 
-                    id="search-input" 
-                    placeholder="Buscar puesto, empresa o palabra clave..." 
-                    class="w-full pl-10 pr-4 py-2.5 bg-slate-900 border border-slate-800 rounded-xl text-xs sm:text-sm text-slate-100 placeholder-slate-500 focus:border-indigo-500 focus:outline-none transition-all"
-                    oninput="handleSearchInput(event)"
-                />
+        <!-- Results Counter & Status Summary -->
+        <div class="flex items-center justify-between px-1 text-xs text-slate-400">
+            <div>
+                <span id="results-count" class="font-semibold text-slate-200">0</span> ofertas encontradas
+                <span id="active-filters-summary" class="ml-2 text-slate-500"></span>
             </div>
+            <span class="hidden sm:inline text-slate-500">Haz clic en cualquier oferta para ver el detalle</span>
+        </div>
 
-            <!-- Status Tabs -->
-            <div class="flex items-center gap-1 p-1 bg-slate-900/90 border border-slate-800 rounded-xl overflow-x-auto text-xs font-medium">
-                <button onclick="selectStatusFilter(null)" id="tab-all" class="filter-tab px-3 py-1.5 rounded-lg text-slate-300 hover:text-white transition-all bg-indigo-600 text-white font-semibold">Todas</button>
-                <button onclick="selectStatusFilter('NUEVA')" id="tab-NUEVA" class="filter-tab px-3 py-1.5 rounded-lg text-slate-300 hover:text-white transition-all">✨ Nuevas</button>
-                <button onclick="selectStatusFilter('VISTA')" id="tab-VISTA" class="filter-tab px-3 py-1.5 rounded-lg text-slate-300 hover:text-white transition-all">👁️ Vistas</button>
-                <button onclick="selectStatusFilter('APLICADA')" id="tab-APLICADA" class="filter-tab px-3 py-1.5 rounded-lg text-slate-300 hover:text-white transition-all">🚀 Aplicadas</button>
-                <button onclick="selectStatusFilter('DESCARTADA')" id="tab-DESCARTADA" class="filter-tab px-3 py-1.5 rounded-lg text-slate-300 hover:text-white transition-all">🗑️ Descartadas</button>
-            </div>
+        <!-- Loading State -->
+        <div id="loading-state" class="hidden py-16 flex flex-col items-center justify-center gap-3 text-center">
+            <div class="w-8 h-8 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+            <span class="text-xs text-slate-400">Filtrando ofertas...</span>
+        </div>
 
-            <!-- Sort Option -->
-            <div class="flex items-center gap-2 shrink-0">
-                <label class="text-xs text-slate-400 font-medium">Ordenar por:</label>
-                <select id="sort-select" onchange="handleSortChange(event)" class="px-3 py-2 bg-slate-900 border border-slate-800 rounded-xl text-xs text-slate-200 focus:border-indigo-500 focus:outline-none cursor-pointer">
-                    <option value="match">🎯 Mayor Compatibilidad (% Match)</option>
-                    <option value="date">📅 Más Recientes</option>
-                </select>
-            </div>
+        <!-- Empty State -->
+        <div id="empty-state" class="hidden py-14 card-pro rounded-xl flex flex-col items-center justify-center gap-2 text-center px-4">
+            <span class="text-base font-semibold text-white">No se han encontrado ofertas con estos filtros</span>
+            <p class="text-xs text-slate-400 max-w-md">Prueba a seleccionar "Todas las modalidades" o ampliar la ubicación geográfica.</p>
+            <button onclick="resetFilters()" class="mt-2 text-xs font-semibold px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 transition-colors">
+                Restablecer filtros
+            </button>
+        </div>
 
-        </section>
+        <!-- Jobs Grid -->
+        <div id="job-grid" class="grid grid-cols-1 md:grid-cols-2 gap-3.5"></div>
 
-        <!-- Job Offers Listing Container -->
-        <section class="flex flex-col gap-4">
-            
-            <!-- Result Header -->
-            <div class="flex items-center justify-between px-1">
-                <div class="flex items-center gap-2">
-                    <h2 class="text-base font-bold font-display text-white">Ofertas Recomendadas</h2>
-                    <span id="results-count" class="text-xs font-semibold px-2 py-0.5 rounded-full bg-slate-800 text-slate-300">0 resultados</span>
-                </div>
-                <div class="text-xs text-slate-400">
-                    Haz clic en cualquier tarjeta para abrir el detalle completo
-                </div>
-            </div>
-
-            <!-- Loading Spinner State -->
-            <div id="loading-state" class="hidden py-16 flex flex-col items-center justify-center gap-4 text-center">
-                <div class="w-10 h-10 border-4 border-indigo-500/20 border-t-indigo-500 rounded-full animate-spin"></div>
-                <p class="text-sm text-slate-400">Cargando ofertas y calculando compatibilidad...</p>
-            </div>
-
-            <!-- Empty State -->
-            <div id="empty-state" class="hidden py-16 glass-card rounded-3xl flex flex-col items-center justify-center gap-3 text-center px-4">
-                <div class="w-14 h-14 rounded-2xl bg-slate-900 border border-slate-800 flex items-center justify-center text-2xl">
-                    🔍
-                </div>
-                <h3 class="text-base font-bold text-white">No se encontraron ofertas coincidentes</h3>
-                <p class="text-xs text-slate-400 max-w-md">Prueba a ampliar tus preferencias de ubicación o añadir más tecnologías en tu perfil.</p>
-                <button onclick="resetAllFilters()" class="mt-2 text-xs font-semibold px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 transition-colors">
-                    Limpiar todos los filtros
-                </button>
-            </div>
-
-            <!-- Offers Grid -->
-            <div id="job-grid" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
-
-            <!-- Pagination Bar -->
-            <div id="pagination-container" class="flex items-center justify-between px-4 py-4 glass-card rounded-2xl mt-2">
-                <button 
-                    id="btn-prev-page" 
-                    onclick="changePage(-1)" 
-                    disabled 
-                    class="px-4 py-2 rounded-xl bg-slate-900 border border-slate-800 text-xs font-semibold text-slate-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-800 transition-all cursor-pointer"
-                >
-                    ← Anterior
-                </button>
-                <span id="page-info" class="text-xs font-medium text-slate-400">Página 1 de 1</span>
-                <button 
-                    id="btn-next-page" 
-                    onclick="changePage(1)" 
-                    disabled 
-                    class="px-4 py-2 rounded-xl bg-slate-900 border border-slate-800 text-xs font-semibold text-slate-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-800 transition-all cursor-pointer"
-                >
-                    Siguiente →
-                </button>
-            </div>
-
-        </section>
+        <!-- Pagination -->
+        <div id="pagination-container" class="flex items-center justify-between px-3 py-3 card-pro rounded-xl mt-1">
+            <button 
+                id="btn-prev-page" 
+                onclick="changePage(-1)" 
+                disabled 
+                class="px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-xs font-medium text-slate-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-800 transition-all cursor-pointer"
+            >
+                ← Anterior
+            </button>
+            <span id="page-info" class="text-xs font-medium text-slate-400">Página 1 de 1</span>
+            <button 
+                id="btn-next-page" 
+                onclick="changePage(1)" 
+                disabled 
+                class="px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-xs font-medium text-slate-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-800 transition-all cursor-pointer"
+            >
+                Siguiente →
+            </button>
+        </div>
 
     </main>
 
     <!-- Footer -->
-    <footer class="mt-auto border-t border-slate-900 py-5 px-4 text-center text-xs text-slate-500">
-        <p>TechJob Aggregator • Perfil Profesional Multiplataforma & Sistemas • Spring Boot 3 + PostgreSQL</p>
+    <footer class="mt-auto border-t border-slate-900 py-4 px-4 text-center text-xs text-slate-500">
+        TechJob Portal • Agregador de Empleo Técnico • Spring Boot 3 + PostgreSQL
     </footer>
 
     <!-- JavaScript Application Logic -->
     <script>
-        // Preset study profiles with their default technologies
-        const STUDY_PROFILES = {
-            'DAM': {
-                name: 'Desarrollo Multiplataforma (DAM)',
-                desc: 'Enfocado en desarrollo de apps nativas/híbridas (Android, iOS, Desktop), Java, Kotlin, Flutter y SQL.',
-                techs: ['Java', 'Kotlin', 'Flutter', 'Dart', 'Swift', 'SwiftUI', 'React Native', 'SQL', 'PostgreSQL', 'SQLite', 'Git', 'REST API']
-            },
-            'DAW': {
-                name: 'Desarrollo Web (DAW)',
-                desc: 'Enfocado en desarrollo Frontend y Backend con Java, Spring Boot, TypeScript, Node.js y frameworks modernos.',
-                techs: ['Java', 'Spring Boot', 'JavaScript', 'TypeScript', 'React', 'Vue.js', 'Angular', 'Node.js', 'SQL', 'PostgreSQL', 'HTML', 'Git', 'REST API']
-            },
-            'ASIR': {
-                name: 'Administración de Sistemas & Redes (ASIR)',
-                desc: 'Enfocado en servidores Linux/Windows, redes, infraestructura, virtualización, Docker y seguridad.',
-                techs: ['Linux', 'Redes/Networking', 'Sysadmin', 'Docker', 'Kubernetes', 'Bash/Shell', 'PowerShell', 'Ciberseguridad', 'Nginx', 'Apache', 'SQL', 'Git']
-            },
-            'DEVOPS': {
-                name: 'DevOps & Cloud Engineer',
-                desc: 'Enfocado en CI/CD, automatización, cloud (AWS, Azure, GCP), contenedores y Terraform.',
-                techs: ['Docker', 'Kubernetes', 'DevOps', 'CI/CD', 'Terraform', 'Ansible', 'AWS', 'Azure', 'GCP', 'Linux', 'Python', 'Git']
-            },
-            'ING': {
-                name: 'Ingeniería Informática / Software',
-                desc: 'Formación full-stack con fuerte base en arquitectura de software, bases de datos y desarrollo backend.',
-                techs: ['Java', 'Python', 'Spring Boot', 'C++', 'C#', '.NET', 'SQL', 'PostgreSQL', 'Docker', 'Linux', 'Git', 'REST API']
-            },
-            'CUSTOM': {
-                name: 'Perfil Personalizado',
-                desc: 'Selecciona libremente cualquier combinación de tecnologías y preferencias.',
-                techs: []
-            }
+        // Core Technology definitions per study program
+        const STUDY_STACKS = {
+            'DAM': ['Java', 'Kotlin', 'Flutter', 'Dart', 'Swift', 'SwiftUI', 'React Native', 'SQL', 'PostgreSQL', 'SQLite', 'Android', 'iOS', 'Git', 'REST API', 'C#', '.NET'],
+            'DAW': ['Java', 'Spring Boot', 'JavaScript', 'TypeScript', 'React', 'Vue.js', 'Angular', 'Node.js', 'SQL', 'PostgreSQL', 'HTML', 'PHP', 'Laravel', 'Django', 'FastAPI', 'Git', 'REST API'],
+            'ASIR': ['Linux', 'Redes/Networking', 'Sysadmin', 'Docker', 'Kubernetes', 'Bash/Shell', 'PowerShell', 'Ciberseguridad', 'Nginx', 'Apache', 'AWS', 'Azure', 'SQL', 'Git', 'Terraform'],
+            'DEVOPS': ['Docker', 'Kubernetes', 'DevOps', 'CI/CD', 'Terraform', 'Ansible', 'AWS', 'Azure', 'GCP', 'Linux', 'Python', 'Go', 'Bash/Shell', 'Git'],
+            'ING': ['Java', 'Python', 'Spring Boot', 'C++', 'C#', '.NET', 'SQL', 'PostgreSQL', 'Docker', 'Linux', 'Go', 'Rust', 'Git', 'REST API'],
+            'ALL': []
         };
 
-        const ALL_AVAILABLE_TECHS = [
-            'Java', 'Spring Boot', 'Kotlin', 'Flutter', 'Dart', 'Swift', 'SwiftUI', 'React Native',
-            'Linux', 'Docker', 'Kubernetes', 'AWS', 'Azure', 'GCP', 'DevOps', 'CI/CD', 'Terraform', 'Ansible',
-            'Redes/Networking', 'Sysadmin', 'Bash/Shell', 'PowerShell', 'Ciberseguridad',
-            'SQL', 'PostgreSQL', 'MySQL', 'MongoDB', 'Redis', 'Python', 'Django', 'FastAPI',
-            'TypeScript', 'JavaScript', 'React', 'Vue.js', 'Angular', 'Node.js', 'C#', '.NET', 'Go', 'Rust', 'Git', 'REST API'
-        ];
-
-        // Global User Profile State
-        let userProfile = {
-            studies: 'DAM',
-            technologies: new Set(STUDY_PROFILES['DAM'].techs),
-            modality: 'ALL',
-            locationPreset: '',
-            locationCustom: ''
-        };
-
-        // Application Navigation State
+        // State
+        let currentStudies = 'DAM';
+        let currentModality = 'ALL';
+        let currentLocation = '';
         let currentStatus = null;
         let currentKeyword = '';
+        let currentSort = 'match';
         let currentPage = 0;
         const pageSize = 16;
-        let currentSort = 'match';
         let searchTimeout = null;
         let currentLoadedJobs = [];
-        let selectedJobForModal = null;
+        let selectedJob = null;
 
         const API_BASE = '/api';
 
-        // Initialize App
         document.addEventListener('DOMContentLoaded', () => {
-            loadUserProfile();
+            loadSavedPreferences();
             checkHealth();
             fetchStats();
             fetchJobs();
 
-            // Keyboard shortcut to close modal
             document.addEventListener('keydown', (e) => {
                 if (e.key === 'Escape') closeModal();
             });
         });
 
-        // Load saved profile from localStorage
-        function loadUserProfile() {
+        function loadSavedPreferences() {
             try {
-                const saved = localStorage.getItem('techjob_user_profile');
+                const saved = localStorage.getItem('techjob_portal_prefs');
                 if (saved) {
                     const parsed = JSON.parse(saved);
-                    userProfile.studies = parsed.studies || 'DAM';
-                    userProfile.technologies = new Set(parsed.technologies || STUDY_PROFILES['DAM'].techs);
-                    userProfile.modality = parsed.modality || 'ALL';
-                    userProfile.locationPreset = parsed.locationPreset || '';
-                    userProfile.locationCustom = parsed.locationCustom || '';
+                    currentStudies = parsed.studies || 'DAM';
+                    currentModality = parsed.modality || 'ALL';
+                    currentLocation = parsed.location || '';
                 }
-            } catch (e) {
-                console.error("Error loading user profile:", e);
-            }
+            } catch (e) {}
 
-            // Sync UI form elements
-            document.getElementById('user-studies').value = userProfile.studies;
-            document.getElementById('user-modality').value = userProfile.modality;
-            document.getElementById('user-location-preset').value = userProfile.locationPreset;
-            document.getElementById('user-location-custom').value = userProfile.locationCustom;
-            document.getElementById('studies-description').textContent = STUDY_PROFILES[userProfile.studies]?.desc || '';
-            document.getElementById('profile-badge-header').textContent = STUDY_PROFILES[userProfile.studies]?.name || 'Mi Perfil';
-
-            renderProfileTechChips();
-        }
-
-        // Save profile to localStorage
-        function saveUserProfile() {
-            try {
-                const toSave = {
-                    studies: userProfile.studies,
-                    technologies: Array.from(userProfile.technologies),
-                    modality: userProfile.modality,
-                    locationPreset: userProfile.locationPreset,
-                    locationCustom: userProfile.locationCustom
-                };
-                localStorage.setItem('techjob_user_profile', JSON.stringify(toSave));
-                showToast("¡Perfil y preferencias guardados con éxito!", "success");
-            } catch (e) {
-                showToast("Error al guardar perfil", "error");
-            }
-        }
-
-        // Reset profile to default
-        function resetUserProfile() {
-            localStorage.removeItem('techjob_user_profile');
-            userProfile.studies = 'DAM';
-            userProfile.technologies = new Set(STUDY_PROFILES['DAM'].techs);
-            userProfile.modality = 'ALL';
-            userProfile.locationPreset = '';
-            userProfile.locationCustom = '';
-            loadUserProfile();
-            fetchJobs();
-            showToast("Perfil restablecido a DAM por defecto", "info");
-        }
-
-        // Render Technology Selection Chips
-        function renderProfileTechChips() {
-            const container = document.getElementById('profile-tech-chips');
-            container.innerHTML = '';
-
-            document.getElementById('selected-tech-count').textContent = `${userProfile.technologies.size} seleccionadas`;
-
-            ALL_AVAILABLE_TECHS.forEach(tech => {
-                const isSelected = userProfile.technologies.has(tech);
-                const chip = document.createElement('button');
-                chip.className = `px-2.5 py-1 rounded-lg text-xs font-medium transition-all cursor-pointer ${
-                    isSelected 
-                        ? 'bg-indigo-600 text-white font-semibold shadow-sm shadow-indigo-600/30' 
-                        : 'bg-slate-900 text-slate-400 hover:bg-slate-800 hover:text-slate-200 border border-slate-800'
-                }`;
-                chip.textContent = (isSelected ? '✓ ' : '+ ') + tech;
-                chip.onclick = () => toggleProfileTech(tech);
-                container.appendChild(chip);
-            });
-        }
-
-        function toggleProfileTech(tech) {
-            if (userProfile.technologies.has(tech)) {
-                userProfile.technologies.delete(tech);
+            document.getElementById('filter-studies').value = currentStudies;
+            document.getElementById('filter-modality').value = currentModality;
+            if (['España', 'Andalucía', 'Jaén', 'Madrid', 'Barcelona', 'Europe', ''].includes(currentLocation)) {
+                document.getElementById('filter-location-preset').value = currentLocation;
             } else {
-                userProfile.technologies.add(tech);
+                document.getElementById('filter-location-custom').value = currentLocation;
             }
-            renderProfileTechChips();
-            reScoreAndRenderCurrentJobs();
         }
 
-        function handleStudiesChange(e) {
-            const selected = e.target.value;
-            userProfile.studies = selected;
-            document.getElementById('studies-description').textContent = STUDY_PROFILES[selected]?.desc || '';
-            document.getElementById('profile-badge-header').textContent = STUDY_PROFILES[selected]?.name || 'Mi Perfil';
+        function savePreferences() {
+            const toSave = {
+                studies: currentStudies,
+                modality: currentModality,
+                location: currentLocation
+            };
+            localStorage.setItem('techjob_portal_prefs', JSON.stringify(toSave));
+        }
 
-            if (selected !== 'CUSTOM') {
-                userProfile.technologies = new Set(STUDY_PROFILES[selected]?.techs || []);
-            }
-            renderProfileTechChips();
+        function handleFilterChange() {
+            currentStudies = document.getElementById('filter-studies').value;
+            currentModality = document.getElementById('filter-modality').value;
+            savePreferences();
+            currentPage = 0;
             fetchJobs();
         }
 
-        function handlePreferenceChange() {
-            userProfile.modality = document.getElementById('user-modality').value;
-            userProfile.locationCustom = document.getElementById('user-location-custom').value;
+        function handleLocationPreset(e) {
+            const val = e.target.value;
+            document.getElementById('filter-location-custom').value = '';
+            currentLocation = val;
+            savePreferences();
+            currentPage = 0;
             fetchJobs();
         }
 
-        function handleLocationPresetChange(e) {
-            userProfile.locationPreset = e.target.value;
+        function handleSearchDebounce() {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                const customLoc = document.getElementById('filter-location-custom').value.trim();
+                if (customLoc) {
+                    currentLocation = customLoc;
+                    document.getElementById('filter-location-preset').value = '';
+                } else {
+                    currentLocation = document.getElementById('filter-location-preset').value;
+                }
+
+                currentKeyword = document.getElementById('search-input').value.trim();
+                document.getElementById('btn-clear-search').classList.toggle('hidden', !currentKeyword);
+
+                savePreferences();
+                currentPage = 0;
+                fetchJobs();
+            }, 300);
+        }
+
+        function clearSearch() {
+            document.getElementById('search-input').value = '';
+            currentKeyword = '';
+            document.getElementById('btn-clear-search').classList.add('hidden');
+            currentPage = 0;
+            fetchJobs();
+        }
+
+        function selectStatus(status) {
+            currentStatus = status;
+            currentPage = 0;
+
+            document.querySelectorAll('.status-tab').forEach(tab => {
+                tab.classList.remove('bg-slate-800', 'text-white', 'font-semibold');
+                tab.classList.add('text-slate-400');
+            });
+
+            const activeTabId = status ? `tab-${status}` : 'tab-all';
+            const activeTab = document.getElementById(activeTabId);
+            if (activeTab) {
+                activeTab.classList.add('bg-slate-800', 'text-white', 'font-semibold');
+                activeTab.classList.remove('text-slate-400');
+            }
+
             fetchJobs();
         }
 
         function handleSortChange(e) {
             currentSort = e.target.value;
-            reScoreAndRenderCurrentJobs();
+            reSortAndRender();
         }
 
-        // Calculate Match Percentage for a job offer against user's profile
+        function resetFilters() {
+            currentStudies = 'DAM';
+            currentModality = 'ALL';
+            currentLocation = '';
+            currentStatus = null;
+            currentKeyword = '';
+            currentPage = 0;
+
+            document.getElementById('filter-studies').value = 'DAM';
+            document.getElementById('filter-modality').value = 'ALL';
+            document.getElementById('filter-location-preset').value = '';
+            document.getElementById('filter-location-custom').value = '';
+            document.getElementById('search-input').value = '';
+            document.getElementById('btn-clear-search').classList.add('hidden');
+
+            selectStatus(null);
+        }
+
+        // Calculate Match Percentage with User's Studies
         function calculateMatch(job) {
             let score = 0;
-            let maxScore = 100;
-
+            const targetStack = STUDY_STACKS[currentStudies] || [];
             const jobTechs = job.requiredTechnologies || [];
-            const userTechs = Array.from(userProfile.technologies);
 
-            // 1. Tech Match (up to 70 points)
-            if (userTechs.length > 0) {
+            if (currentStudies === 'ALL') {
+                return 80;
+            }
+
+            // Tech stack match (up to 75 points)
+            if (targetStack.length > 0) {
                 let matches = 0;
                 jobTechs.forEach(t => {
-                    if (userTechs.some(ut => ut.toLowerCase() === t.toLowerCase())) {
+                    if (targetStack.some(st => st.toLowerCase() === t.toLowerCase())) {
                         matches++;
                     }
                 });
 
                 if (jobTechs.length > 0) {
-                    const ratio = Math.min(1.0, matches / Math.min(jobTechs.length, 3));
-                    score += ratio * 70;
+                    score += Math.min(1.0, matches / Math.min(jobTechs.length, 3)) * 75;
                 } else {
-                    score += 35; // neutral if no tags
+                    score += 45; // neutral
                 }
             } else {
                 score += 50;
             }
 
-            // 2. Modality Preference Match (up to 15 points)
-            if (userProfile.modality === 'REMOTE_ONLY') {
+            // Modality match (up to 15 points)
+            if (currentModality === 'REMOTE_ONLY') {
                 if (job.isRemote) score += 15;
-                else score -= 20;
-            } else if (userProfile.modality === 'ONSITE_HYBRID') {
+                else score -= 25;
+            } else if (currentModality === 'ONSITE_HYBRID') {
                 if (!job.isRemote) score += 15;
             } else {
                 score += 15;
             }
 
-            // 3. Location Match (up to 15 points)
-            const targetLoc = (userProfile.locationCustom || userProfile.locationPreset || '').toLowerCase();
+            // Location match (up to 10 points)
+            const loc = (currentLocation || '').toLowerCase();
             const jobLoc = (job.location || '').toLowerCase();
-
-            if (targetLoc) {
-                if (jobLoc.includes(targetLoc) || (job.isRemote && targetLoc.includes('world'))) {
-                    score += 15;
-                } else if (job.isRemote) {
+            if (loc) {
+                if (jobLoc.includes(loc) || (job.isRemote && (jobLoc.includes('spain') || jobLoc.includes('españa') || jobLoc.includes('world') || jobLoc.includes('emea')))) {
                     score += 10;
                 }
             } else {
-                score += 15;
+                score += 10;
             }
 
-            return Math.max(10, Math.min(99, Math.round(score)));
+            return Math.max(15, Math.min(99, Math.round(score)));
         }
 
-        // Fetch Offers from Backend
+        // Fetch jobs from backend
         async function fetchJobs() {
             showLoading(true);
             try {
@@ -708,25 +533,24 @@
                 if (currentStatus) url += `&status=${encodeURIComponent(currentStatus)}`;
                 if (currentKeyword) url += `&keyword=${encodeURIComponent(currentKeyword)}`;
 
-                if (userProfile.modality === 'REMOTE_ONLY') {
+                if (currentModality === 'REMOTE_ONLY') {
                     url += `&isRemote=true`;
                 }
 
-                const locFilter = userProfile.locationCustom || userProfile.locationPreset;
-                if (locFilter) {
-                    url += `&location=${encodeURIComponent(locFilter)}`;
+                if (currentLocation) {
+                    url += `&location=${encodeURIComponent(currentLocation)}`;
                 }
 
                 const res = await fetch(url);
-                if (!res.ok) throw new Error('Error al cargar ofertas');
+                if (!res.ok) throw new Error();
 
                 const data = await res.json();
-                currentLoadedJobs = (data.content || []).map(job => ({
-                    ...job,
-                    matchPercentage: calculateMatch(job)
+                currentLoadedJobs = (data.content || []).map(j => ({
+                    ...j,
+                    matchPercentage: calculateMatch(j)
                 }));
 
-                reScoreAndRenderCurrentJobs();
+                reSortAndRender();
                 updatePagination(data);
             } catch (err) {
                 showToast("Error de conexión al cargar ofertas", "error");
@@ -736,26 +560,19 @@
             }
         }
 
-        // Re-score & sort current loaded jobs
-        function reScoreAndRenderCurrentJobs() {
-            currentLoadedJobs.forEach(job => {
-                job.matchPercentage = calculateMatch(job);
-            });
-
+        function reSortAndRender() {
             if (currentSort === 'match') {
                 currentLoadedJobs.sort((a, b) => b.matchPercentage - a.matchPercentage);
             }
-
             renderJobs(currentLoadedJobs);
         }
 
-        // Render Job Cards
         function renderJobs(jobs) {
             const grid = document.getElementById('job-grid');
             const emptyState = document.getElementById('empty-state');
             const resultsCount = document.getElementById('results-count');
 
-            resultsCount.textContent = `${jobs.length} ofertas`;
+            resultsCount.textContent = jobs.length;
 
             if (!jobs || jobs.length === 0) {
                 grid.innerHTML = '';
@@ -764,144 +581,124 @@
             }
 
             emptyState.classList.add('hidden');
-            grid.innerHTML = jobs.map(job => createJobCardHtml(job)).join('');
+            grid.innerHTML = jobs.map(j => createJobCard(j)).join('');
         }
 
-        // Create Job Card HTML template
-        function createJobCardHtml(job) {
+        function createJobCard(job) {
             const statusBadge = getStatusBadge(job.status);
             const sourceBadge = getSourceBadge(job.source);
-            const formattedDate = formatRelativeDate(job.publishedDate);
+            const relativeDate = formatRelativeDate(job.publishedDate);
             const matchBadge = getMatchBadge(job.matchPercentage);
-            
-            const techPills = (job.requiredTechnologies || []).slice(0, 6).map(t => {
-                const isUserMatch = userProfile.technologies.has(t);
-                const colorClass = isUserMatch 
-                    ? 'bg-emerald-950/60 text-emerald-300 border-emerald-500/40 font-semibold' 
-                    : 'bg-slate-900 text-slate-300 border-slate-800';
-                return `<span class="px-2 py-0.5 text-[11px] rounded-md border ${colorClass}">${escapeHtml(t)}</span>`;
-            }).join('');
+            const cleanDesc = cleanTextOnly(job.shortDescription || 'Sin descripción disponible.');
 
-            // Clean short description preview (strip any remaining html)
-            const cleanShortDesc = cleanTextOnly(job.shortDescription || 'Sin descripción disponible.');
+            const stack = STUDY_STACKS[currentStudies] || [];
+            const techPills = (job.requiredTechnologies || []).slice(0, 5).map(t => {
+                const isMatch = stack.some(st => st.toLowerCase() === t.toLowerCase());
+                const cls = isMatch 
+                    ? 'bg-slate-800 text-indigo-300 border-slate-700 font-medium' 
+                    : 'bg-slate-900 text-slate-400 border-slate-800';
+                return `<span class="px-2 py-0.5 text-[11px] rounded border ${cls}">${escapeHtml(t)}</span>`;
+            }).join('');
 
             return `
                 <div 
-                    onclick="openJobDetailModal(${job.id})" 
-                    class="glass-card rounded-3xl p-5 flex flex-col justify-between gap-4 transition-all duration-200 hover:border-indigo-500/40 hover:shadow-xl hover:shadow-indigo-500/10 hover:translate-y-[-2px] cursor-pointer group"
+                    onclick="openDetailModal(${job.id})" 
+                    class="card-pro rounded-xl p-4 flex flex-col justify-between gap-3.5 transition-all duration-150 hover:translate-y-[-1px] cursor-pointer"
                 >
-                    
-                    <!-- Top Metadata Row -->
-                    <div class="flex flex-col gap-2.5">
-                        <div class="flex items-center justify-between gap-2 flex-wrap">
+                    <div class="flex flex-col gap-2">
+                        
+                        <!-- Top meta -->
+                        <div class="flex items-center justify-between gap-2 flex-wrap text-xs">
                             <div class="flex items-center gap-2">
                                 ${sourceBadge}
                                 ${matchBadge}
                             </div>
-                            <div class="flex items-center gap-1.5">
+                            <div>
                                 ${statusBadge}
                             </div>
                         </div>
 
                         <!-- Title & Company -->
                         <div>
-                            <h3 class="text-base font-bold text-white group-hover:text-indigo-400 transition-colors leading-snug">
+                            <h3 class="text-sm sm:text-base font-bold text-white leading-snug hover:text-indigo-400 transition-colors">
                                 ${escapeHtml(job.title)}
                             </h3>
                             <div class="flex items-center gap-2 mt-1 text-xs text-slate-400 flex-wrap">
-                                <span class="font-semibold text-slate-200 flex items-center gap-1">
-                                    🏢 ${escapeHtml(job.companyName)}
-                                </span>
+                                <span class="font-semibold text-slate-300">${escapeHtml(job.companyName)}</span>
                                 <span>•</span>
-                                <span>📍 ${escapeHtml(job.location || 'Remoto')}</span>
+                                <span>${escapeHtml(job.location || (job.isRemote ? 'Remoto' : 'España'))}</span>
                                 <span>•</span>
-                                <span class="text-slate-400">${formattedDate}</span>
+                                <span class="text-slate-500">${relativeDate}</span>
                             </div>
                         </div>
 
-                        <!-- Description Snippet -->
-                        <p class="text-xs text-slate-300/80 line-clamp-3 leading-relaxed mt-0.5">
-                            ${escapeHtml(cleanShortDesc)}
+                        <!-- Clean Description Snippet -->
+                        <p class="text-xs text-slate-400 line-clamp-2 leading-relaxed">
+                            ${escapeHtml(cleanDesc)}
                         </p>
 
-                        <!-- Tech Tags -->
-                        <div class="flex flex-wrap gap-1.5 mt-2">
+                        <!-- Tech tags -->
+                        <div class="flex flex-wrap gap-1 mt-1">
                             ${techPills}
                         </div>
+
                     </div>
 
-                    <!-- Bottom Action Controls -->
-                    <div class="flex items-center justify-between gap-2 pt-3 border-t border-slate-800/80 flex-wrap" onclick="event.stopPropagation()">
-                        
-                        <!-- Open External Link (Auto-marks as VIEWED) -->
+                    <!-- Card Actions -->
+                    <div class="flex items-center justify-between gap-2 pt-2.5 border-t border-slate-800 text-xs" onclick="event.stopPropagation()">
                         <a 
                             href="${escapeHtml(job.url)}" 
                             target="_blank" 
                             rel="noopener noreferrer"
                             onclick="handleOpenOffer(${job.id})"
-                            class="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-xl bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 border border-indigo-500/30 transition-colors cursor-pointer"
+                            class="text-indigo-400 hover:text-indigo-300 font-medium inline-flex items-center gap-1 transition-colors"
                         >
-                            <span>Abrir Oferta</span>
-                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <span>Abrir enlace</span>
+                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
                             </svg>
                         </a>
 
-                        <!-- State Change Quick Actions -->
                         <div class="flex items-center gap-1.5">
-                            ${job.status !== 'VISTA' ? `
-                                <button 
-                                    onclick="updateOfferStatus(${job.id}, 'VISTA')" 
-                                    title="Marcar como Vista"
-                                    class="p-1.5 rounded-lg bg-slate-900 hover:bg-sky-500/20 hover:text-sky-300 text-slate-400 border border-slate-800 transition-all cursor-pointer text-xs"
-                                >
-                                    👁️
-                                </button>
-                            ` : ''}
-                            
                             ${job.status !== 'APLICADA' ? `
                                 <button 
                                     onclick="updateOfferStatus(${job.id}, 'APLICADA')" 
-                                    title="Marcar como Aplicada"
-                                    class="px-2.5 py-1.5 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/30 font-semibold transition-all cursor-pointer text-xs flex items-center gap-1"
+                                    class="px-2.5 py-1 rounded bg-slate-900 hover:bg-emerald-900/50 hover:text-emerald-300 text-slate-300 border border-slate-700 transition-colors"
                                 >
-                                    🚀 <span>Aplicada</span>
+                                    Postulado
                                 </button>
                             ` : ''}
 
                             ${job.status !== 'DESCARTADA' ? `
                                 <button 
                                     onclick="updateOfferStatus(${job.id}, 'DESCARTADA')" 
+                                    class="px-2 py-1 rounded bg-slate-900 hover:bg-rose-950/50 hover:text-rose-300 text-slate-500 border border-slate-800 transition-colors"
                                     title="Descartar"
-                                    class="p-1.5 rounded-lg bg-slate-900 hover:bg-rose-500/20 hover:text-rose-300 text-slate-400 border border-slate-800 transition-all cursor-pointer text-xs"
                                 >
-                                    🗑️
+                                    Descartar
                                 </button>
                             ` : `
                                 <button 
                                     onclick="updateOfferStatus(${job.id}, 'NUEVA')" 
-                                    title="Restaurar a Nueva"
-                                    class="px-2 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs transition-all cursor-pointer"
+                                    class="px-2 py-1 rounded bg-slate-800 text-slate-300 hover:bg-slate-700"
                                 >
                                     Restaurar
                                 </button>
                             `}
                         </div>
-
                     </div>
 
                 </div>
             `;
         }
 
-        // Open Job Detail Modal
-        function openJobDetailModal(id) {
+        // Open Modal Detail
+        function openDetailModal(id) {
             const job = currentLoadedJobs.find(j => j.id === id);
             if (!job) return;
 
-            selectedJobForModal = job;
+            selectedJob = job;
 
-            // Auto-mark as VIEWED when opened in modal if it's currently NUEVA
             if (job.status === 'NUEVA') {
                 handleOpenOffer(job.id);
                 job.status = 'VISTA';
@@ -914,20 +711,18 @@
             
             document.getElementById('modal-source-badge').innerHTML = getSourceBadge(job.source);
             document.getElementById('modal-status-badge').innerHTML = getStatusBadge(job.status);
-            document.getElementById('modal-match-badge').innerHTML = `🎯 ${job.matchPercentage || calculateMatch(job)}% Match`;
-
-            const companyInitial = (job.companyName || 'E').substring(0, 1).toUpperCase();
-            document.getElementById('modal-company-avatar').textContent = companyInitial;
+            document.getElementById('modal-match-badge').innerHTML = `${job.matchPercentage || calculateMatch(job)}% Afinidad`;
 
             // Render Tech chips in modal
             const modalTechList = document.getElementById('modal-tech-list');
             modalTechList.innerHTML = '';
+            const stack = STUDY_STACKS[currentStudies] || [];
             (job.requiredTechnologies || []).forEach(t => {
-                const isMatch = userProfile.technologies.has(t);
+                const isMatch = stack.some(st => st.toLowerCase() === t.toLowerCase());
                 const badge = document.createElement('span');
-                badge.className = `px-3 py-1 text-xs font-semibold rounded-xl border ${
+                badge.className = `px-2.5 py-1 text-xs rounded border ${
                     isMatch 
-                        ? 'bg-emerald-950/70 text-emerald-300 border-emerald-500/40 shadow-sm' 
+                        ? 'bg-slate-800 text-emerald-300 border-emerald-700/60 font-medium' 
                         : 'bg-slate-900 text-slate-300 border-slate-800'
                 }`;
                 badge.textContent = (isMatch ? '✓ ' : '') + t;
@@ -935,12 +730,10 @@
             });
 
             // Clean full description text
-            const desc = cleanTextOnly(job.fullDescription || job.shortDescription || 'Sin descripción detallada disponible.');
+            const desc = cleanTextOnly(job.fullDescription || job.shortDescription || 'Sin descripción disponible.');
             document.getElementById('modal-description').textContent = desc;
-
             document.getElementById('modal-external-link').href = job.url;
 
-            // Show modal with animation
             const modal = document.getElementById('detail-modal');
             const container = document.getElementById('modal-container');
             modal.classList.remove('hidden');
@@ -958,8 +751,8 @@
             container.classList.add('scale-95', 'opacity-0');
             setTimeout(() => {
                 modal.classList.add('hidden');
-                selectedJobForModal = null;
-            }, 200);
+                selectedJob = null;
+            }, 150);
         }
 
         function handleBackdropClick(e) {
@@ -969,16 +762,15 @@
         }
 
         async function modalUpdateStatus(newStatus) {
-            if (!selectedJobForModal) return;
-            await updateOfferStatus(selectedJobForModal.id, newStatus);
+            if (!selectedJob) return;
+            await updateOfferStatus(selectedJob.id, newStatus);
             document.getElementById('modal-status-badge').innerHTML = getStatusBadge(newStatus);
-            selectedJobForModal.status = newStatus;
+            selectedJob.status = newStatus;
         }
 
-        // Clean HTML tags and decode entities in Javascript for 100% guarantee
         function cleanTextOnly(text) {
             if (!text) return '';
-            let cleaned = text
+            return text
                 .replace(/<[^>]*>/g, ' ')
                 .replace(/&nbsp;/g, ' ')
                 .replace(/&amp;/g, '&')
@@ -994,69 +786,64 @@
                 .replace(/&middot;/g, '•')
                 .replace(/&ndash;/g, '-')
                 .replace(/&mdash;/g, '—')
-                .replace(/<[^>]*>/g, ' ') // second pass
+                .replace(/<[^>]*>/g, ' ')
                 .replace(/\s+/g, ' ')
                 .trim();
-            return cleaned;
         }
 
-        // Status Badge Helper
         function getStatusBadge(status) {
             switch(status) {
                 case 'NUEVA':
-                    return '<span class="text-[11px] font-bold px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">✨ NUEVA</span>';
+                    return '<span class="text-[11px] font-medium px-2 py-0.5 rounded bg-indigo-950 text-indigo-300 border border-indigo-800">Nueva</span>';
                 case 'VISTA':
-                    return '<span class="text-[11px] font-bold px-2 py-0.5 rounded-full bg-sky-500/20 text-sky-300 border border-sky-500/30">👁️ VISTA</span>';
+                    return '<span class="text-[11px] font-medium px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700">Revisada</span>';
                 case 'APLICADA':
-                    return '<span class="text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">🚀 APLICADA</span>';
+                    return '<span class="text-[11px] font-semibold px-2 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-800">Postulado</span>';
                 case 'DESCARTADA':
-                    return '<span class="text-[11px] font-bold px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/30">🗑️ DESCARTADA</span>';
+                    return '<span class="text-[11px] font-medium px-2 py-0.5 rounded bg-rose-950/60 text-rose-400 border border-rose-900">Descartada</span>';
                 default:
                     return '';
             }
         }
 
-        // Match Badge Helper
         function getMatchBadge(matchPct) {
             if (matchPct >= 80) {
-                return `<span class="text-[10px] uppercase font-extrabold px-2 py-0.5 rounded-md bg-emerald-950/80 text-emerald-300 border border-emerald-500/40">🎯 ${matchPct}% Match</span>`;
+                return `<span class="text-[11px] font-semibold px-2 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-800">${matchPct}% afinidad</span>`;
             } else if (matchPct >= 50) {
-                return `<span class="text-[10px] uppercase font-bold px-2 py-0.5 rounded-md bg-indigo-950/80 text-indigo-300 border border-indigo-500/40">⚡ ${matchPct}% Match</span>`;
+                return `<span class="text-[11px] font-medium px-2 py-0.5 rounded bg-indigo-950 text-indigo-300 border border-indigo-900">${matchPct}% afinidad</span>`;
             } else {
-                return `<span class="text-[10px] uppercase font-medium px-2 py-0.5 rounded-md bg-slate-900 text-slate-400 border border-slate-800">${matchPct}% Match</span>`;
+                return `<span class="text-[11px] font-normal px-2 py-0.5 rounded bg-slate-900 text-slate-400 border border-slate-800">${matchPct}%</span>`;
             }
         }
 
-        // Source Badge Helper
         function getSourceBadge(source) {
             switch(source) {
+                case 'JOBICY':
+                    return '<span class="text-[10px] uppercase font-bold px-1.5 py-0.5 rounded bg-blue-950 text-blue-300 border border-blue-800">Jobicy</span>';
                 case 'REMOTIVE':
-                    return '<span class="text-[10px] uppercase font-bold px-2 py-0.5 rounded-md bg-purple-950/60 text-purple-300 border border-purple-800/40">Remotive</span>';
+                    return '<span class="text-[10px] uppercase font-bold px-1.5 py-0.5 rounded bg-purple-950 text-purple-300 border border-purple-800">Remotive</span>';
                 case 'ARBEITNOW':
-                    return '<span class="text-[10px] uppercase font-bold px-2 py-0.5 rounded-md bg-amber-950/60 text-amber-300 border border-amber-800/40">Arbeitnow</span>';
+                    return '<span class="text-[10px] uppercase font-bold px-1.5 py-0.5 rounded bg-amber-950 text-amber-300 border border-amber-800">Arbeitnow</span>';
                 case 'WEWORKREMOTELY':
-                    return '<span class="text-[10px] uppercase font-bold px-2 py-0.5 rounded-md bg-teal-950/60 text-teal-300 border border-teal-800/40">WWR RSS</span>';
+                    return '<span class="text-[10px] uppercase font-bold px-1.5 py-0.5 rounded bg-teal-950 text-teal-300 border border-teal-800">WWR RSS</span>';
                 default:
-                    return '<span class="text-[10px] uppercase font-bold px-2 py-0.5 rounded-md bg-slate-800 text-slate-400">Web</span>';
+                    return '<span class="text-[10px] uppercase font-bold px-1.5 py-0.5 rounded bg-slate-800 text-slate-400">Web</span>';
             }
         }
 
-        // Date Formatter
         function formatRelativeDate(dateStr) {
             if (!dateStr) return 'Reciente';
             const date = new Date(dateStr);
             const now = new Date();
             const diffHours = Math.floor((now - date) / (1000 * 60 * 60));
-            
-            if (diffHours < 1) return 'Hace unos minutos';
+            if (diffHours < 1) return 'Hace minutos';
             if (diffHours < 24) return `Hace ${diffHours} h`;
             const diffDays = Math.floor(diffHours / 24);
             if (diffDays === 1) return 'Ayer';
-            if (diffDays < 30) return `Hace ${diffDays} días`;
+            if (diffDays < 30) return `Hace ${diffDays} d`;
             return date.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
         }
 
-        // Status update handler
         async function updateOfferStatus(id, newStatus) {
             try {
                 const res = await fetch(`${API_BASE}/jobs/${id}/status`, {
@@ -1066,7 +853,7 @@
                 });
 
                 if (res.ok) {
-                    showToast(`Oferta marcada como ${newStatus}`, "success");
+                    showToast(`Estado actualizado: ${newStatus}`, "success");
                     fetchStats();
                     fetchJobs();
                 } else {
@@ -1084,25 +871,22 @@
                     fetchStats();
                     fetchJobs();
                 }, 500);
-            } catch (err) {
-                console.error("Error auto-marking as viewed:", err);
-            }
+            } catch (err) {}
         }
 
-        // Trigger manual synchronization
         async function triggerSync() {
             const btn = document.getElementById('btn-sync');
             const spinner = document.getElementById('sync-spinner');
             btn.disabled = true;
             spinner.classList.add('animate-spin');
 
-            showToast("Iniciando sincronización con APIs externas y feeds RSS...", "info");
+            showToast("Buscando nuevas ofertas en fuentes externas...", "info");
 
             try {
                 const res = await fetch(`${API_BASE}/sync`, { method: 'POST' });
                 if (res.ok) {
                     const result = await res.json();
-                    showToast(`Sincronización finalizada: ${result.newSaved} nuevas ofertas guardadas`, "success");
+                    showToast(`Sincronización finalizada: ${result.newSaved} ofertas nuevas añadidas`, "success");
                     fetchStats();
                     fetchJobs();
                 } else {
@@ -1121,13 +905,9 @@
                 .then(res => res.json())
                 .then(data => {
                     document.getElementById('status-text').textContent = `Online (${data.profile})`;
-                    document.getElementById('status-ping-dot').className = "relative inline-flex rounded-full h-2 w-2 bg-emerald-500";
-                    document.getElementById('status-ping-animate').className = "animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75";
                 })
                 .catch(() => {
                     document.getElementById('status-text').textContent = "Desconectado";
-                    document.getElementById('status-ping-dot').className = "relative inline-flex rounded-full h-2 w-2 bg-rose-500";
-                    document.getElementById('status-ping-animate').className = "hidden";
                 });
         }
 
@@ -1135,49 +915,13 @@
             fetch(`${API_BASE}/jobs/stats`)
                 .then(res => res.json())
                 .then(stats => {
-                    document.getElementById('stat-total').textContent = stats.total || 0;
-                    document.getElementById('stat-nuevas').textContent = stats.nuevas || 0;
-                    document.getElementById('stat-vistas').textContent = stats.vistas || 0;
-                    document.getElementById('stat-aplicadas').textContent = stats.aplicadas || 0;
-                    document.getElementById('stat-descartadas').textContent = stats.descartadas || 0;
+                    document.getElementById('count-total').textContent = stats.total || 0;
+                    document.getElementById('count-nuevas').textContent = stats.nuevas || 0;
+                    document.getElementById('count-vistas').textContent = stats.vistas || 0;
+                    document.getElementById('count-aplicadas').textContent = stats.aplicadas || 0;
+                    document.getElementById('count-descartadas').textContent = stats.descartadas || 0;
                 })
-                .catch(err => console.error("Error fetching stats:", err));
-        }
-
-        function handleSearchInput(e) {
-            clearTimeout(searchTimeout);
-            searchTimeout = setTimeout(() => {
-                currentKeyword = e.target.value;
-                currentPage = 0;
-                fetchJobs();
-            }, 350);
-        }
-
-        function selectStatusFilter(status) {
-            currentStatus = status;
-            currentPage = 0;
-
-            document.querySelectorAll('.filter-tab').forEach(tab => {
-                tab.classList.remove('bg-indigo-600', 'text-white', 'font-semibold');
-                tab.classList.add('text-slate-300');
-            });
-
-            const activeTabId = status ? `tab-${status}` : 'tab-all';
-            const activeTab = document.getElementById(activeTabId);
-            if (activeTab) {
-                activeTab.classList.add('bg-indigo-600', 'text-white', 'font-semibold');
-                activeTab.classList.remove('text-slate-300');
-            }
-
-            fetchJobs();
-        }
-
-        function resetAllFilters() {
-            currentStatus = null;
-            currentKeyword = '';
-            currentPage = 0;
-            document.getElementById('search-input').value = '';
-            selectStatusFilter(null);
+                .catch(e => {});
         }
 
         function changePage(delta) {
@@ -1209,28 +953,25 @@
             const toast = document.createElement('div');
             
             let bgClass = "bg-slate-900 border-slate-700 text-slate-100";
-            let icon = "ℹ️";
             if (type === 'success') {
-                bgClass = "bg-emerald-950/95 border-emerald-500/40 text-emerald-200 shadow-emerald-950/50";
-                icon = "✅";
+                bgClass = "bg-slate-900 border-emerald-700 text-emerald-300";
             } else if (type === 'error') {
-                bgClass = "bg-rose-950/95 border-rose-500/40 text-rose-200 shadow-rose-950/50";
-                icon = "❌";
+                bgClass = "bg-slate-900 border-rose-700 text-rose-300";
             }
 
-            toast.className = `pointer-events-auto p-4 rounded-2xl border shadow-2xl flex items-center gap-3 text-xs sm:text-sm font-semibold transition-all duration-300 transform translate-y-4 opacity-0 ${bgClass}`;
-            toast.innerHTML = `<span>${icon}</span><span class="flex-1">${escapeHtml(message)}</span>`;
+            toast.className = `pointer-events-auto p-3.5 rounded-xl border shadow-xl flex items-center gap-2 text-xs font-medium transition-all duration-200 transform translate-y-2 opacity-0 ${bgClass}`;
+            toast.textContent = message;
 
             container.appendChild(toast);
 
             requestAnimationFrame(() => {
-                toast.classList.remove('translate-y-4', 'opacity-0');
+                toast.classList.remove('translate-y-2', 'opacity-0');
             });
 
             setTimeout(() => {
-                toast.classList.add('opacity-0', 'translate-x-6');
-                setTimeout(() => toast.remove(), 300);
-            }, 3500);
+                toast.classList.add('opacity-0', 'translate-x-4');
+                setTimeout(() => toast.remove(), 200);
+            }, 3200);
         }
 
         function escapeHtml(text) {

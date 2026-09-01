@@ -68,8 +68,60 @@ public class JobOfferService {
             }
 
             if (location != null && !location.trim().isEmpty()) {
-                String locPattern = "%" + location.trim().toLowerCase() + "%";
-                predicates.add(cb.like(cb.lower(root.get("location")), locPattern));
+                String rawLoc = location.trim().toLowerCase();
+                List<Predicate> locPredicates = new ArrayList<>();
+
+                // Direct match
+                locPredicates.add(cb.like(cb.lower(root.get("location")), "%" + rawLoc + "%"));
+
+                // Spanish regional intelligence
+                if (rawLoc.contains("jaen") || rawLoc.contains("jaén")) {
+                    locPredicates.add(cb.like(cb.lower(root.get("location")), "%jaen%"));
+                    locPredicates.add(cb.like(cb.lower(root.get("location")), "%jaén%"));
+                    locPredicates.add(cb.like(cb.lower(root.get("location")), "%andaluc%"));
+                    locPredicates.add(cb.like(cb.lower(root.get("location")), "%spain%"));
+                    locPredicates.add(cb.like(cb.lower(root.get("location")), "%españa%"));
+                    // Remote positions eligible from Jaén
+                    if (isRemote == null || isRemote) {
+                        locPredicates.add(cb.and(cb.equal(root.get("isRemote"), true), cb.like(cb.lower(root.get("location")), "%world%")));
+                        locPredicates.add(cb.and(cb.equal(root.get("isRemote"), true), cb.like(cb.lower(root.get("location")), "%europe%")));
+                        locPredicates.add(cb.and(cb.equal(root.get("isRemote"), true), cb.like(cb.lower(root.get("location")), "%emea%")));
+                    }
+                } else if (rawLoc.contains("andaluc")) {
+                    locPredicates.add(cb.like(cb.lower(root.get("location")), "%andaluc%"));
+                    locPredicates.add(cb.like(cb.lower(root.get("location")), "%jaen%"));
+                    locPredicates.add(cb.like(cb.lower(root.get("location")), "%jaén%"));
+                    locPredicates.add(cb.like(cb.lower(root.get("location")), "%sevilla%"));
+                    locPredicates.add(cb.like(cb.lower(root.get("location")), "%malaga%"));
+                    locPredicates.add(cb.like(cb.lower(root.get("location")), "%málaga%"));
+                    locPredicates.add(cb.like(cb.lower(root.get("location")), "%granada%"));
+                    locPredicates.add(cb.like(cb.lower(root.get("location")), "%cordoba%"));
+                    locPredicates.add(cb.like(cb.lower(root.get("location")), "%córdoba%"));
+                    locPredicates.add(cb.like(cb.lower(root.get("location")), "%spain%"));
+                    locPredicates.add(cb.like(cb.lower(root.get("location")), "%españa%"));
+                    if (isRemote == null || isRemote) {
+                        locPredicates.add(cb.and(cb.equal(root.get("isRemote"), true), cb.like(cb.lower(root.get("location")), "%world%")));
+                        locPredicates.add(cb.and(cb.equal(root.get("isRemote"), true), cb.like(cb.lower(root.get("location")), "%europe%")));
+                        locPredicates.add(cb.and(cb.equal(root.get("isRemote"), true), cb.like(cb.lower(root.get("location")), "%emea%")));
+                    }
+                } else if (rawLoc.contains("españa") || rawLoc.contains("spain")) {
+                    locPredicates.add(cb.like(cb.lower(root.get("location")), "%spain%"));
+                    locPredicates.add(cb.like(cb.lower(root.get("location")), "%españa%"));
+                    locPredicates.add(cb.like(cb.lower(root.get("location")), "%madrid%"));
+                    locPredicates.add(cb.like(cb.lower(root.get("location")), "%barcelona%"));
+                    locPredicates.add(cb.like(cb.lower(root.get("location")), "%valencia%"));
+                    locPredicates.add(cb.like(cb.lower(root.get("location")), "%andaluc%"));
+                    locPredicates.add(cb.like(cb.lower(root.get("location")), "%sevilla%"));
+                    locPredicates.add(cb.like(cb.lower(root.get("location")), "%malaga%"));
+                    locPredicates.add(cb.like(cb.lower(root.get("location")), "%bilbao%"));
+                    if (isRemote == null || isRemote) {
+                        locPredicates.add(cb.and(cb.equal(root.get("isRemote"), true), cb.like(cb.lower(root.get("location")), "%world%")));
+                        locPredicates.add(cb.and(cb.equal(root.get("isRemote"), true), cb.like(cb.lower(root.get("location")), "%europe%")));
+                        locPredicates.add(cb.and(cb.equal(root.get("isRemote"), true), cb.like(cb.lower(root.get("location")), "%emea%")));
+                    }
+                }
+
+                predicates.add(cb.or(locPredicates.toArray(new Predicate[0])));
             }
 
             query.distinct(true);

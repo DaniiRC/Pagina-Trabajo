@@ -47,9 +47,14 @@ public class RemotiveClient implements JobIngestionClient {
         List<JobOffer> results = new ArrayList<>();
         Set<String> seenUrls = new HashSet<>();
 
+        List<String> queryUris = new ArrayList<>();
         for (String category : categories) {
+            queryUris.add(BASE_URL + "?category=" + category.trim() + "&limit=35");
+        }
+        queryUris.add(BASE_URL + "?search=Spain&limit=30");
+
+        for (String uri : queryUris) {
             try {
-                String uri = BASE_URL + "?category=" + category.trim() + "&limit=30";
                 log.info("Fetching jobs from Remotive API: {}", uri);
 
                 RemotiveResponseDto response = restClient.get()
@@ -71,7 +76,7 @@ public class RemotiveClient implements JobIngestionClient {
                     }
                 }
             } catch (Exception e) {
-                log.error("Error fetching jobs from Remotive category {}: {}", category, e.getMessage());
+                log.error("Error fetching jobs from Remotive uri {}: {}", uri, e.getMessage());
             }
         }
 
