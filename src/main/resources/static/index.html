@@ -665,7 +665,15 @@
             else if (state.modality === '') score += 10;
 
             // Location (15 pts)
-            if (!state.country || (job.country && job.country.toLowerCase().includes(state.country.toLowerCase())) || (job.location && job.location.toLowerCase().includes(state.country.toLowerCase()))) score += 15;
+            if (!state.country) {
+                score += 15;
+            } else if (state.country === 'España') {
+                if (job.country === 'España' || job.autonomousCommunity || (job.location && (job.location.toLowerCase().includes('españa') || job.location.toLowerCase().includes('spain')))) {
+                    score += 15;
+                }
+            } else if (job.country && job.country.toLowerCase().includes(state.country.toLowerCase())) {
+                score += 15;
+            }
 
             return Math.max(15, Math.min(99, Math.round(score)));
         }
@@ -988,9 +996,11 @@
 
         function buildDisplayLocation(job) {
             if (job.provinceOrCity && job.autonomousCommunity) return `${job.provinceOrCity} (${job.autonomousCommunity})`;
-            if (job.autonomousCommunity) return job.autonomousCommunity + (job.country ? ', ' + job.country : '');
-            if (job.country && job.country !== 'Worldwide') return job.country + (job.isRemote ? ' · Remoto' : '');
-            return job.location || (job.isRemote ? 'Remoto' : 'Ubicación no indicada');
+            if (job.autonomousCommunity) return `${job.autonomousCommunity}, España`;
+            if (job.provinceOrCity) return `${job.provinceOrCity}, España`;
+            if (job.country === 'España') return job.isRemote ? 'España · Remoto' : 'España';
+            if (job.country && job.country !== 'Worldwide' && job.country !== 'Global') return `${job.country}${job.isRemote ? ' · Remoto' : ''}`;
+            return job.location || (job.isRemote ? 'Remoto Global' : 'Ubicación no indicada');
         }
 
         function getSourceBadge(source) {

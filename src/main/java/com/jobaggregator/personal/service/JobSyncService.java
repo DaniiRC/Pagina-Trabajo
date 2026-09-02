@@ -79,15 +79,18 @@ public class JobSyncService {
                     modified = true;
                 }
 
-                // Enrich geography if country or continent is null
-                if (offer.getCountry() == null || offer.getContinent() == null) {
-                    SpanishGeographyService.GeoResult geo = spanishGeographyService.inferGeography(
-                            offer.getLocation(), offer.getTitle(), offer.getFullDescription(), offer.getIsRemote()
-                    );
-                    if (offer.getContinent() == null) offer.setContinent(geo.continent());
-                    if (offer.getCountry() == null) offer.setCountry(geo.country());
-                    if (offer.getAutonomousCommunity() == null) offer.setAutonomousCommunity(geo.autonomousCommunity());
-                    if (offer.getProvinceOrCity() == null) offer.setProvinceOrCity(geo.provinceOrCity());
+                // Re-evaluate geography with strict SpanishGeographyService
+                SpanishGeographyService.GeoResult geo = spanishGeographyService.inferGeography(
+                        offer.getLocation(), offer.getTitle(), offer.getFullDescription(), offer.getIsRemote()
+                );
+                if (!Objects.equals(offer.getContinent(), geo.continent()) ||
+                    !Objects.equals(offer.getCountry(), geo.country()) ||
+                    !Objects.equals(offer.getAutonomousCommunity(), geo.autonomousCommunity()) ||
+                    !Objects.equals(offer.getProvinceOrCity(), geo.provinceOrCity())) {
+                    offer.setContinent(geo.continent());
+                    offer.setCountry(geo.country());
+                    offer.setAutonomousCommunity(geo.autonomousCommunity());
+                    offer.setProvinceOrCity(geo.provinceOrCity());
                     modified = true;
                 }
 
