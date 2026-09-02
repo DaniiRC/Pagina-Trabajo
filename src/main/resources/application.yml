@@ -27,8 +27,10 @@ jobs:
     jobicy:
       enabled: true
     tecnoempleo:
-      enabled: true
+      enabled: false
     manfred:
+      enabled: false
+    adzuna:
       enabled: true
 
 # InfoJobs API credentials (set via environment variables in Render)
@@ -36,4 +38,10 @@ infojobs:
   client:
     id: "${INFOJOBS_CLIENT_ID:}"
     secret: "${INFOJOBS_CLIENT_SECRET:}"
+
+# Adzuna Spain API (free tier, register at https://developer.adzuna.com)
+adzuna:
+  app:
+    id: "${ADZUNA_APP_ID:}"
+    key: "${ADZUNA_APP_KEY:}"
 

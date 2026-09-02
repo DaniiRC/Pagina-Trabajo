@@ -74,12 +74,89 @@
         .modal-panel { transition: opacity 0.18s ease, transform 0.18s ease; }
         .modal-panel.closed { opacity: 0; transform: translateY(10px) scale(0.98); pointer-events: none; }
         .modal-panel.open { opacity: 1; transform: translateY(0) scale(1); }
+
+        @keyframes pulse-bar {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(200%); }
+        }
+        .animate-progress {
+            animation: pulse-bar 1.5s infinite ease-in-out;
+        }
     </style>
 </head>
 <body class="text-zinc-100 min-h-screen font-sans text-[13px]">
 
     <!-- Toast Container -->
-    <div id="toast-container" class="fixed bottom-5 right-5 z-[200] flex flex-col gap-2 w-[320px] pointer-events-none"></div>
+    <div id="toast-container" class="fixed bottom-5 right-5 z-[200] flex flex-col gap-2 w-[340px] pointer-events-none"></div>
+
+    <!-- Sync Progress & Results Modal -->
+    <div id="sync-modal" class="fixed inset-0 z-[150] modal-backdrop hidden items-center justify-center p-4">
+        <div id="sync-modal-panel" class="surface max-w-md w-full rounded-2xl overflow-hidden shadow-2xl p-6 flex flex-col gap-4 border border-[#252840]">
+            
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2.5">
+                    <div id="sync-status-icon" class="w-8 h-8 rounded-xl bg-indigo-950/60 border border-indigo-800/40 flex items-center justify-center text-indigo-400">
+                        <svg class="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                    </div>
+                    <div>
+                        <h3 id="sync-modal-title" class="text-sm font-bold text-white">Sincronizando fuentes de empleo</h3>
+                        <p id="sync-modal-subtitle" class="text-[11px] text-zinc-400">Consultando APIs y portales técnicos...</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Animated Progress Bar -->
+            <div id="sync-bar-container" class="w-full h-1.5 bg-[#080910] rounded-full overflow-hidden relative border border-[#1a1d2e]">
+                <div id="sync-bar" class="h-full bg-gradient-to-r from-indigo-500 to-cyan-400 rounded-full w-full animate-progress"></div>
+            </div>
+
+            <!-- Live Steps -->
+            <div id="sync-steps" class="flex flex-col gap-2 py-1 text-[11px] text-zinc-400">
+                <div class="flex items-center gap-2">
+                    <span class="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-pulse"></span>
+                    <span>Descargando ofertas de Arbeitnow, Remotive, WWR, Jobicy, Adzuna...</span>
+                </div>
+                <div class="flex items-center gap-2 text-zinc-500">
+                    <span class="w-1.5 h-1.5 rounded-full bg-zinc-600"></span>
+                    <span>Clasificando perfiles técnicos (DAM, DAW, ASIR, DevOps, etc.)...</span>
+                </div>
+                <div class="flex items-center gap-2 text-zinc-500">
+                    <span class="w-1.5 h-1.5 rounded-full bg-zinc-600"></span>
+                    <span>Normalizando ubicaciones españolas y deduplicando...</span>
+                </div>
+            </div>
+
+            <!-- Sync Results Detail (Hidden during progress) -->
+            <div id="sync-results" class="hidden flex-col gap-3">
+                <div class="grid grid-cols-3 gap-2 text-center">
+                    <div class="bg-[#080910] p-2.5 rounded-xl border border-[#1a1d2e]">
+                        <p class="text-[10px] uppercase tracking-wider text-zinc-500 font-semibold">Analizadas</p>
+                        <p id="res-total-fetched" class="text-base font-bold text-zinc-200">0</p>
+                    </div>
+                    <div class="bg-emerald-950/20 p-2.5 rounded-xl border border-emerald-800/30">
+                        <p class="text-[10px] uppercase tracking-wider text-emerald-400 font-semibold">Nuevas</p>
+                        <p id="res-new-saved" class="text-base font-bold text-emerald-300">0</p>
+                    </div>
+                    <div class="bg-[#080910] p-2.5 rounded-xl border border-[#1a1d2e]">
+                        <p class="text-[10px] uppercase tracking-wider text-zinc-500 font-semibold">Existentes</p>
+                        <p id="res-skipped" class="text-base font-bold text-zinc-400">0</p>
+                    </div>
+                </div>
+
+                <!-- Source Breakdown -->
+                <div>
+                    <p class="text-[10px] uppercase tracking-wider text-zinc-500 font-semibold mb-1.5">Detalle por portal:</p>
+                    <div id="sync-sources-list" class="flex flex-wrap gap-1.5 max-h-32 overflow-y-auto"></div>
+                </div>
+
+                <div class="flex items-center justify-between pt-2 border-t border-[#1a1d2e] text-[11px] text-zinc-500">
+                    <span id="sync-duration-label">Tiempo: 0.0s</span>
+                    <button onclick="closeSyncModal()" class="px-4 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs transition-colors">Entendido</button>
+                </div>
+            </div>
+
+        </div>
+    </div>
 
     <!-- Detail Modal -->
     <div id="modal" class="fixed inset-0 z-[100] modal-backdrop hidden items-center justify-center p-4 overflow-y-auto" onclick="handleBackdropClick(event)">
@@ -153,9 +230,9 @@
                         <span id="server-dot" class="w-1.5 h-1.5 rounded-full bg-zinc-600"></span>
                         <span id="server-status">Verificando...</span>
                     </div>
-                    <button id="sync-btn" onclick="triggerSync()" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold transition-all">
+                    <button id="sync-btn" onclick="triggerSync()" class="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold transition-all shadow-md shadow-indigo-950/40">
                         <svg id="sync-icon" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
-                        Sincronizar
+                        <span id="sync-btn-text">Sincronizar</span>
                     </button>
                 </div>
             </div>
@@ -171,7 +248,10 @@
                     
                     <!-- Studies Tags -->
                     <div class="flex flex-col gap-1.5 flex-1">
-                        <label class="text-[10px] font-semibold uppercase tracking-widest text-zinc-500">Mis Estudios / Perfil</label>
+                        <div class="flex items-center justify-between">
+                            <label class="text-[10px] font-semibold uppercase tracking-widest text-zinc-500">Mis Estudios / Perfil</label>
+                            <span class="text-[10px] text-zinc-600">Haz clic para filtrar</span>
+                        </div>
                         <div class="flex flex-wrap gap-1.5" id="study-tags">
                             <span class="tag-study active" data-study="DAM" onclick="toggleStudy(this)">DAM</span>
                             <span class="tag-study" data-study="DAW" onclick="toggleStudy(this)">DAW</span>
@@ -258,12 +338,11 @@
             <!-- Results Info Bar -->
             <div class="flex items-center justify-between px-1 text-[11px] text-zinc-500">
                 <span><span id="results-count" class="font-semibold text-zinc-300">—</span> ofertas encontradas</span>
-                <span class="hidden sm:inline">Haz clic en una oferta para ver el detalle</span>
+                <span class="hidden sm:inline">Haz clic en una tarjeta para ver el detalle y postularte</span>
             </div>
 
-            <!-- Job Grid (or skeletons, or empty state) -->
+            <!-- Skeletons Loader -->
             <div id="skeleton-grid" class="grid grid-cols-1 md:grid-cols-2 gap-3 hidden">
-                <!-- 6 skeleton cards -->
                 <div class="surface rounded-xl p-4 flex flex-col gap-3" style="min-height:140px">
                     <div class="skeleton h-3 w-32 rounded-md"></div>
                     <div class="skeleton h-4 w-4/5 rounded-md"></div>
@@ -290,7 +369,6 @@
                     <div class="flex gap-1.5 mt-auto">
                         <div class="skeleton h-4 w-12 rounded-md"></div>
                         <div class="skeleton h-4 w-20 rounded-md"></div>
-                        <div class="skeleton h-4 w-10 rounded-md"></div>
                     </div>
                 </div>
                 <div class="surface rounded-xl p-4 flex flex-col gap-3" style="min-height:140px">
@@ -302,25 +380,6 @@
                         <div class="skeleton h-4 w-14 rounded-md"></div>
                     </div>
                 </div>
-                <div class="surface rounded-xl p-4 flex flex-col gap-3" style="min-height:140px">
-                    <div class="skeleton h-3 w-32 rounded-md"></div>
-                    <div class="skeleton h-4 w-4/5 rounded-md"></div>
-                    <div class="skeleton h-3 w-1/4 rounded-md"></div>
-                    <div class="flex gap-1.5 mt-auto">
-                        <div class="skeleton h-4 w-10 rounded-md"></div>
-                        <div class="skeleton h-4 w-18 rounded-md"></div>
-                    </div>
-                </div>
-                <div class="surface rounded-xl p-4 flex flex-col gap-3" style="min-height:140px">
-                    <div class="skeleton h-3 w-20 rounded-md"></div>
-                    <div class="skeleton h-4 w-2/3 rounded-md"></div>
-                    <div class="skeleton h-3 w-2/5 rounded-md"></div>
-                    <div class="flex gap-1.5 mt-auto">
-                        <div class="skeleton h-4 w-14 rounded-md"></div>
-                        <div class="skeleton h-4 w-10 rounded-md"></div>
-                        <div class="skeleton h-4 w-16 rounded-md"></div>
-                    </div>
-                </div>
             </div>
 
             <!-- Empty State -->
@@ -330,7 +389,7 @@
                 </svg>
                 <div>
                     <p class="text-sm font-semibold text-zinc-300 mb-1">Sin resultados para estos filtros</p>
-                    <p class="text-xs text-zinc-500 max-w-xs">Prueba a ampliar la zona geográfica, cambiar la modalidad o seleccionar otro perfil de estudios.</p>
+                    <p class="text-xs text-zinc-500 max-w-xs">Prueba a seleccionar otros perfiles de estudio, ampliar la ubicación a "Cualquier país" o pulsar en "Sincronizar" para descargar ofertas.</p>
                 </div>
                 <button onclick="resetFilters()" class="px-4 py-2 rounded-lg bg-[#0d0f18] hover:bg-[#13162a] text-zinc-300 border border-[#1a1d2e] text-xs font-semibold transition-colors">
                     Restablecer filtros
@@ -366,7 +425,7 @@
         };
 
         let state = {
-            selectedStudies: ['DAM'],
+            selectedStudies: ['DAM', 'DAW'],
             modality: '',
             country: '',
             community: '',
@@ -375,7 +434,7 @@
             keyword: '',
             sort: 'match',
             page: 0,
-            pageSize: 18
+            pageSize: 20
         };
         let loadedJobs = [];
         let activeModal = null;
@@ -391,13 +450,20 @@
             checkHealth();
             fetchStats();
             fetchJobs();
-            document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+            document.addEventListener('keydown', e => { 
+                if (e.key === 'Escape') {
+                    closeModal(); 
+                    closeSyncModal();
+                }
+            });
         });
 
         function loadPrefs() {
             try {
                 const p = JSON.parse(localStorage.getItem('tj_prefs') || '{}');
-                if (p.studies) state.selectedStudies = p.studies;
+                if (p.studies && Array.isArray(p.studies) && p.studies.length > 0) {
+                    state.selectedStudies = p.studies;
+                }
             } catch(e) {}
             syncStudyTagsUI();
         }
@@ -419,7 +485,10 @@
         function toggleStudy(el) {
             const study = el.dataset.study;
             if (state.selectedStudies.includes(study)) {
-                if (state.selectedStudies.length === 1) return; // keep at least 1
+                if (state.selectedStudies.length === 1) {
+                    showToast('Mantén al menos 1 perfil seleccionado', 'info');
+                    return;
+                }
                 state.selectedStudies = state.selectedStudies.filter(s => s !== study);
             } else {
                 state.selectedStudies = [...state.selectedStudies, study];
@@ -504,7 +573,7 @@
                 state.keyword = document.getElementById('search-input').value.trim();
                 state.page = 0;
                 fetchJobs();
-            }, 320);
+            }, 300);
         }
 
         function setStatus(status, el) {
@@ -551,7 +620,9 @@
             if (state.country) params.set('country', state.country);
             if (state.community) params.set('community', state.community);
             if (state.province) params.set('province', state.province);
-            state.selectedStudies.forEach(s => params.append('studies', s));
+            if (state.selectedStudies && state.selectedStudies.length > 0) {
+                state.selectedStudies.forEach(s => params.append('studies', s));
+            }
 
             try {
                 const res = await fetch('/api/jobs?' + params.toString());
@@ -561,7 +632,7 @@
                 reSortAndRender();
                 updatePagination(data);
             } catch (e) {
-                showToast('Error de conexión con el servidor', 'error');
+                showToast('Error al obtener ofertas del servidor', 'error');
                 renderJobs([]);
             } finally {
                 showSkeletons(false);
@@ -584,19 +655,19 @@
 
             if (uniqueStack.length === 0) return 70;
 
-            // Tech match (70 pts)
+            // Tech match (65 pts)
             const matches = jobTechs.filter(t => uniqueStack.some(st => st.toLowerCase() === t.toLowerCase())).length;
-            score += Math.min(1, matches / Math.max(1, Math.min(jobTechs.length, 4))) * 70;
+            score += Math.min(1, matches / Math.max(1, Math.min(jobTechs.length, 3))) * 65;
 
-            // Modality (15 pts)
+            // Modality (20 pts)
             const wantsRemote = state.modality === 'REMOTO_100' || state.modality === '';
-            if (wantsRemote && job.modality === 'REMOTO_100') score += 15;
-            else if (state.modality === '' ) score += 10;
+            if (wantsRemote && job.modality === 'REMOTO_100') score += 20;
+            else if (state.modality === '') score += 10;
 
             // Location (15 pts)
-            if (!state.country || job.country?.toLowerCase().includes(state.country.toLowerCase())) score += 15;
+            if (!state.country || (job.country && job.country.toLowerCase().includes(state.country.toLowerCase())) || (job.location && job.location.toLowerCase().includes(state.country.toLowerCase()))) score += 15;
 
-            return Math.max(5, Math.min(98, Math.round(score)));
+            return Math.max(15, Math.min(99, Math.round(score)));
         }
 
         function renderJobs(jobs) {
@@ -626,17 +697,17 @@
                 return `<span class="px-1.5 py-0.5 text-[10px] rounded-md border ${isMatch ? 'bg-indigo-950/40 border-indigo-800/50 text-indigo-300 font-semibold' : 'bg-[#0d0f18] border-[#1a1d2e] text-zinc-500'}">${esc(t)}</span>`;
             }).join('');
 
-            const matchBadge = match >= 80
-                ? `<span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-emerald-950/50 border border-emerald-800/40 text-emerald-400">${match}%</span>`
-                : match >= 50
-                ? `<span class="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-indigo-950/40 border border-indigo-900/50 text-indigo-400">${match}%</span>`
-                : `<span class="text-[10px] px-2 py-0.5 rounded-md bg-[#0d0f18] border border-[#1a1d2e] text-zinc-600">${match}%</span>`;
+            const matchBadge = match >= 75
+                ? `<span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-emerald-950/50 border border-emerald-800/40 text-emerald-400">${match}% afinidad</span>`
+                : match >= 45
+                ? `<span class="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-indigo-950/40 border border-indigo-900/50 text-indigo-400">${match}% afinidad</span>`
+                : `<span class="text-[10px] px-2 py-0.5 rounded-md bg-[#0d0f18] border border-[#1a1d2e] text-zinc-600">${match}% afinidad</span>`;
 
             const statusBadge = getStatusBadge(job.status);
             const sourceBadge = getSourceBadge(job.source);
             const modalityLabel = getModalityLabel(job.modality);
             const date = relDate(job.publishedDate);
-            const desc = esc(cleanText(job.shortDescription || '').substring(0, 120));
+            const desc = esc(cleanText(job.shortDescription || '').substring(0, 130));
             const loc = esc(buildDisplayLocation(job));
 
             return `
@@ -659,7 +730,7 @@
                     </div>
                     ${statusBadge}
                 </div>
-                <p class="text-[11px] text-zinc-500 leading-relaxed line-clamp-2">${desc}</p>
+                <p class="text-[11px] text-zinc-400 leading-relaxed line-clamp-2">${desc}</p>
                 <div class="flex flex-wrap gap-1">${techPills}</div>
                 <div class="flex items-center justify-between gap-2 pt-2.5 border-t border-[#1a1d2e]" onclick="event.stopPropagation()">
                     <a href="${esc(job.url)}" target="_blank" rel="noopener noreferrer" onclick="markViewed(${job.id})" class="text-[11px] font-semibold text-indigo-400 hover:text-indigo-300 inline-flex items-center gap-1 transition-colors">
@@ -696,7 +767,7 @@
 
             const matchEl = document.getElementById('modal-match');
             matchEl.textContent = match + '% afinidad';
-            matchEl.className = 'px-2 py-0.5 text-[10px] font-bold rounded-md ' + (match >= 80 ? 'bg-emerald-950/50 border border-emerald-800/40 text-emerald-400' : match >= 50 ? 'bg-indigo-950/40 border border-indigo-900/50 text-indigo-400' : 'bg-[#0d0f18] border border-[#1a1d2e] text-zinc-500');
+            matchEl.className = 'px-2 py-0.5 text-[10px] font-bold rounded-md ' + (match >= 75 ? 'bg-emerald-950/50 border border-emerald-800/40 text-emerald-400' : match >= 45 ? 'bg-indigo-950/40 border border-indigo-900/50 text-indigo-400' : 'bg-[#0d0f18] border border-[#1a1d2e] text-zinc-500');
 
             // Salary
             const salaryEl = document.getElementById('modal-salary');
@@ -737,7 +808,7 @@
                 modalEl.classList.add('hidden');
                 modalEl.classList.remove('flex');
                 activeModal = null;
-            }, 200);
+            }, 180);
         }
 
         function handleBackdropClick(e) {
@@ -748,6 +819,99 @@
             if (!activeModal) return;
             await setJobStatus(activeModal.id, newStatus);
             document.getElementById('modal-match').textContent = newStatus;
+        }
+
+        // =====================================================================
+        // SYNC FLOW (PARALLEL + PROGRESS MODAL)
+        // =====================================================================
+        async function triggerSync() {
+            const btn = document.getElementById('sync-btn');
+            const btnText = document.getElementById('sync-btn-text');
+            const icon = document.getElementById('sync-icon');
+
+            btn.disabled = true;
+            btnText.textContent = 'Sincronizando...';
+            icon.classList.add('animate-spin');
+
+            // Open sync progress modal
+            openSyncModal();
+
+            try {
+                const res = await fetch('/api/sync', { method: 'POST' });
+                if (!res.ok) throw new Error('Error de respuesta del servidor');
+                const r = await res.json();
+                
+                showSyncResults(r);
+                fetchStats();
+                fetchJobs();
+                showToast(`Sincronización finalizada: ${r.newSaved} ofertas nuevas añadidas`, 'success');
+            } catch (e) {
+                showToast('Error durante la sincronización: ' + e.message, 'error');
+                closeSyncModal();
+            } finally {
+                btn.disabled = false;
+                btnText.textContent = 'Sincronizar';
+                icon.classList.remove('animate-spin');
+            }
+        }
+
+        function openSyncModal() {
+            const modal = document.getElementById('sync-modal');
+            document.getElementById('sync-bar-container').classList.remove('hidden');
+            document.getElementById('sync-steps').classList.remove('hidden');
+            document.getElementById('sync-results').classList.add('hidden');
+            document.getElementById('sync-results').classList.remove('flex');
+            document.getElementById('sync-modal-title').textContent = 'Sincronizando fuentes de empleo';
+            document.getElementById('sync-modal-subtitle').textContent = 'Consultando APIs y feeds en paralelo...';
+            document.getElementById('sync-status-icon').innerHTML = '<svg class="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>';
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function showSyncResults(data) {
+            document.getElementById('sync-bar-container').classList.add('hidden');
+            document.getElementById('sync-steps').classList.add('hidden');
+            const resContainer = document.getElementById('sync-results');
+            resContainer.classList.remove('hidden');
+            resContainer.classList.add('flex');
+
+            document.getElementById('sync-modal-title').textContent = 'Sincronización completada';
+            document.getElementById('sync-modal-subtitle').textContent = 'Base de datos de ofertas actualizada';
+            document.getElementById('sync-status-icon').innerHTML = '<svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>';
+
+            document.getElementById('res-total-fetched').textContent = data.totalFetched || 0;
+            document.getElementById('res-new-saved').textContent = '+' + (data.newSaved || 0);
+            document.getElementById('res-skipped').textContent = data.skippedDuplicates || 0;
+
+            const durationSec = ((data.durationMs || 0) / 1000).toFixed(1);
+            document.getElementById('sync-duration-label').textContent = `Tiempo: ${durationSec}s`;
+
+            // Render source badges
+            const sourcesList = document.getElementById('sync-sources-list');
+            sourcesList.innerHTML = '';
+            const fetchedMap = data.fetchedBySource || {};
+            const statusMap = data.sourceStatus || {};
+
+            Object.keys(fetchedMap).forEach(source => {
+                const count = fetchedMap[source] || 0;
+                const status = statusMap[source] || '';
+                const pill = document.createElement('div');
+                pill.className = 'px-2.5 py-1.5 rounded-lg bg-[#080910] border border-[#1a1d2e] flex items-center justify-between gap-2 text-[11px] w-full';
+                pill.innerHTML = `
+                    <div class="flex items-center gap-1.5">
+                        ${getSourceBadge(source)}
+                        <span class="text-zinc-400 text-[10px]">${status || ''}</span>
+                    </div>
+                    <span class="font-bold text-zinc-200 text-[11px]">${count}</span>
+                `;
+                sourcesList.appendChild(pill);
+            });
+        }
+
+        function closeSyncModal() {
+            const modal = document.getElementById('sync-modal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
         }
 
         // =====================================================================
@@ -770,24 +934,6 @@
 
         function markViewed(id) {
             fetch(`/api/jobs/${id}/view`, { method: 'POST' }).catch(() => {});
-        }
-
-        async function triggerSync() {
-            const btn = document.getElementById('sync-btn');
-            const icon = document.getElementById('sync-icon');
-            btn.disabled = true;
-            icon.classList.add('animate-spin');
-            showToast('Sincronizando fuentes de empleo...', 'info');
-            try {
-                const res = await fetch('/api/sync', { method: 'POST' });
-                if (res.ok) {
-                    const r = await res.json();
-                    showToast(`Sincronización completada: ${r.newSaved} ofertas nuevas`, 'success');
-                    fetchStats();
-                    fetchJobs();
-                }
-            } catch(e) { showToast('Error durante la sincronización', 'error'); }
-            finally { btn.disabled = false; icon.classList.remove('animate-spin'); }
         }
 
         async function fetchStats() {
@@ -841,10 +987,10 @@
         }
 
         function buildDisplayLocation(job) {
-            if (job.provinceOrCity && job.autonomousCommunity) return `${job.provinceOrCity} — ${job.autonomousCommunity}`;
-            if (job.autonomousCommunity) return job.autonomousCommunity + ', ' + (job.country || '');
-            if (job.country && job.country !== 'Worldwide') return job.country;
-            return job.location || (job.isRemote ? 'Remoto' : 'No especificado');
+            if (job.provinceOrCity && job.autonomousCommunity) return `${job.provinceOrCity} (${job.autonomousCommunity})`;
+            if (job.autonomousCommunity) return job.autonomousCommunity + (job.country ? ', ' + job.country : '');
+            if (job.country && job.country !== 'Worldwide') return job.country + (job.isRemote ? ' · Remoto' : '');
+            return job.location || (job.isRemote ? 'Remoto' : 'Ubicación no indicada');
         }
 
         function getSourceBadge(source) {
@@ -856,9 +1002,19 @@
                 'INFOJOBS': 'bg-sky-950/50 border-sky-800/40 text-sky-400',
                 'TECNOEMPLEO': 'bg-orange-950/50 border-orange-800/40 text-orange-400',
                 'MANFRED': 'bg-indigo-950/50 border-indigo-800/40 text-indigo-400',
+                'ADZUNA': 'bg-emerald-950/50 border-emerald-800/40 text-emerald-400',
+            };
+            const labels = {
+                'JOBICY':'Jobicy',
+                'REMOTIVE':'Remotive',
+                'ARBEITNOW':'Arbeitnow',
+                'WEWORKREMOTELY':'WWR',
+                'INFOJOBS':'InfoJobs',
+                'TECNOEMPLEO':'Tecnoempleo',
+                'MANFRED':'Manfred',
+                'ADZUNA':'Adzuna ES'
             };
             const cls = map[source] || 'bg-[#0d0f18] border-[#1a1d2e] text-zinc-500';
-            const labels = { 'JOBICY':'Jobicy','REMOTIVE':'Remotive','ARBEITNOW':'Arbeitnow','WEWORKREMOTELY':'WWR','INFOJOBS':'InfoJobs','TECNOEMPLEO':'Tecnoempleo','MANFRED':'Manfred' };
             return `<span class="px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-widest rounded-md border ${cls}">${labels[source]||source}</span>`;
         }
 
@@ -879,7 +1035,7 @@
                 'HIBRIDO': 'bg-amber-950/30 border-amber-900/40 text-amber-500',
                 'PRESENCIAL': 'bg-[#0d0f18] border-[#1a1d2e] text-zinc-500',
             };
-            const labels = { 'REMOTO_100': 'Remoto', 'HIBRIDO': 'Híbrido', 'PRESENCIAL': 'Presencial' };
+            const labels = { 'REMOTO_100': '100% Remoto', 'HIBRIDO': 'Híbrido', 'PRESENCIAL': 'Presencial' };
             if (!modality) return '';
             return `<span class="px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider rounded-md border ${map[modality]||''}">${labels[modality]||modality}</span>`;
         }
@@ -912,11 +1068,20 @@
         function showToast(msg, type = 'info') {
             const c = document.getElementById('toast-container');
             const t = document.createElement('div');
-            const colors = { success: 'border-emerald-800/50 text-emerald-300', error: 'border-rose-800/50 text-rose-300', info: 'border-[#1a1d2e] text-zinc-300' };
-            t.className = `pointer-events-auto toast-enter px-4 py-3 rounded-xl surface border shadow-2xl text-xs font-medium ${colors[type]||colors.info}`;
+            const colors = { 
+                success: 'border-emerald-800/50 text-emerald-300 bg-[#08120e]', 
+                error: 'border-rose-800/50 text-rose-300 bg-[#14080a]', 
+                info: 'border-[#1a1d2e] text-zinc-300 bg-[#0d0f18]' 
+            };
+            t.className = `pointer-events-auto toast-enter px-4 py-3 rounded-xl border shadow-2xl text-xs font-medium flex items-center gap-2 ${colors[type]||colors.info}`;
             t.textContent = msg;
             c.appendChild(t);
-            setTimeout(() => { t.style.opacity='0'; t.style.transform='translateY(4px)'; t.style.transition='all 0.2s ease'; setTimeout(()=>t.remove(),220); }, 3000);
+            setTimeout(() => { 
+                t.style.opacity='0'; 
+                t.style.transform='translateY(4px)'; 
+                t.style.transition='all 0.2s ease'; 
+                setTimeout(() => t.remove(), 220); 
+            }, 3500);
         }
     </script>
 </body>

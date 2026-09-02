@@ -23,10 +23,10 @@ public class ManfredClient implements JobIngestionClient {
     private final TechnologyParserService technologyParserService;
     private final SpanishGeographyService spanishGeographyService;
 
-    @Value("${jobs.manfred.enabled:true}")
+    @Value("${jobs.manfred.enabled:false}")
     private boolean enabled;
 
-    // GetManfred public API — no auth required for public listing
+    // GetManfred does not have a public open API. Disable by default.
     private static final String API_URL = "https://www.getmanfred.com/api/v1/offers?lang=es&status=open";
 
     @Override

@@ -19,5 +19,7 @@ public class SyncResultDto {
     private int newSaved;
     private int skippedDuplicates;
     private Map<String, Integer> fetchedBySource;
+    private Map<String, String> sourceStatus;
+    private long durationMs;
     private LocalDateTime timestamp;
 }

@@ -1,9 +1,8 @@
 package com.jobaggregator.personal.client.weworkremotely;
 
 import com.jobaggregator.personal.client.JobIngestionClient;
-import com.jobaggregator.personal.model.JobOffer;
-import com.jobaggregator.personal.model.JobSource;
-import com.jobaggregator.personal.model.JobStatus;
+import com.jobaggregator.personal.model.*;
+import com.jobaggregator.personal.service.SpanishGeographyService;
 import com.jobaggregator.personal.service.TechnologyParserService;
 import com.rometools.rome.feed.synd.SyndCategory;
 import com.rometools.rome.feed.synd.SyndEntry;
@@ -31,6 +30,7 @@ import java.util.*;
 public class WwrRssClient implements JobIngestionClient {
 
     private final TechnologyParserService technologyParserService;
+    private final SpanishGeographyService spanishGeographyService;
 
     @Value("${jobs.weworkremotely.enabled:true}")
     private boolean enabled;
@@ -129,6 +129,9 @@ public class WwrRssClient implements JobIngestionClient {
         }
 
         Set<String> techs = technologyParserService.extractTechnologies(rawTitle, cleanDescription, tags);
+        Set<String> studies = technologyParserService.extractStudyLevels(rawTitle, fullDescription, techs);
+        JobModality modality = technologyParserService.inferModality(true, "Remote Worldwide", fullDescription);
+        SpanishGeographyService.GeoResult geo = spanishGeographyService.inferGeography("Remote Worldwide", rawTitle, fullDescription, true);
 
         LocalDateTime pubDate = LocalDateTime.now();
         if (entry.getPublishedDate() != null) {
@@ -144,10 +147,16 @@ public class WwrRssClient implements JobIngestionClient {
                 .url(entry.getLink().trim())
                 .publishedDate(pubDate)
                 .requiredTechnologies(techs)
+                .studyLevels(studies)
                 .status(JobStatus.NUEVA)
                 .source(JobSource.WEWORKREMOTELY)
+                .modality(modality)
                 .isRemote(true)
                 .location("Remote Worldwide")
+                .continent(geo.continent())
+                .country(geo.country())
+                .autonomousCommunity(geo.autonomousCommunity())
+                .provinceOrCity(geo.provinceOrCity())
                 .build();
     }
 }

@@ -140,15 +140,12 @@ public class TechnologyParserService {
             studies.add("INGENIERIA");
         }
 
-        // If no explicit study found, assign generic baseline matching
+        // If no explicit study found, assign baseline IT profiles
         if (studies.isEmpty()) {
-            if (technologies.contains("Java") || technologies.contains("Python") || technologies.contains("SQL")) {
-                studies.add("DAM");
-                studies.add("DAW");
-                studies.add("GRADO_INFORMATICA");
-            } else {
-                studies.add("SIN_ESTUDIOS");
-            }
+            studies.add("DAM");
+            studies.add("DAW");
+            studies.add("ASIR");
+            studies.add("GRADO_INFORMATICA");
         }
 
         return studies;

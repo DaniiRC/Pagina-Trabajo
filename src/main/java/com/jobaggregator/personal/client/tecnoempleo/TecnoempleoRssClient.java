@@ -26,7 +26,7 @@ public class TecnoempleoRssClient implements JobIngestionClient {
     private final TechnologyParserService technologyParserService;
     private final SpanishGeographyService spanishGeographyService;
 
-    @Value("${jobs.tecnoempleo.enabled:true}")
+    @Value("${jobs.tecnoempleo.enabled:false}")
     private boolean enabled;
 
     // Public RSS feeds for IT/tech jobs in Spain (category pages)

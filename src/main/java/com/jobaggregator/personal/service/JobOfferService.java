@@ -156,31 +156,46 @@ public class JobOfferService {
                     ));
                 }
             } else if (country != null && !country.trim().isEmpty()) {
-                // Country selected
-                String countryNorm = "%" + normalizeForSearch(country) + "%";
-                Predicate countryPred = cb.or(
-                        cb.like(cb.lower(root.get("country")), countryNorm),
-                        cb.like(cb.lower(root.get("location")), countryNorm)
-                );
-                if ("españa".equals(normalizeForSearch(country)) || "spain".equals(normalizeForSearch(country))) {
-                    // Spain also includes worldwide remote
-                    geoPredicates.add(cb.or(
-                            countryPred,
-                            cb.like(cb.lower(root.get("country")), "%spain%"),
-                            cb.like(cb.lower(root.get("country")), "%españa%")
-                    ));
-                    if (modality == null || modality == JobModality.REMOTO_100) {
-                        geoPredicates.add(cb.and(
-                                cb.equal(root.get("modality"), JobModality.REMOTO_100),
-                                cb.or(
-                                        cb.like(cb.lower(root.get("country")), "%worldwide%"),
-                                        cb.like(cb.lower(root.get("country")), "%europa%"),
-                                        cb.like(cb.lower(root.get("country")), "%europe%")
-                                )
-                        ));
+                String countryNorm = normalizeForSearch(country);
+
+                if ("espana".equals(countryNorm) || "spain".equals(countryNorm) || "españa".equals(countryNorm)) {
+                    // Spain — match country field, location field AND Spanish city/province names
+                    // Also handles legacy records where country = null but location contains Spain info
+                    List<Predicate> spainPreds = new ArrayList<>();
+                    spainPreds.add(cb.like(cb.lower(root.get("country")), "%spain%"));
+                    spainPreds.add(cb.like(cb.lower(root.get("country")), "%espa%"));
+                    spainPreds.add(cb.like(cb.lower(root.get("location")), "%spain%"));
+                    spainPreds.add(cb.like(cb.lower(root.get("location")), "%espa%"));
+
+                    // Include Spanish provinces/cities in location
+                    for (List<String> provinces : spanishGeographyService.getSpanishGeographyTree().values()) {
+                        for (String prov : provinces) {
+                            String p = "%" + SpanishGeographyService.removeAccents(prov.toLowerCase()) + "%";
+                            spainPreds.add(cb.like(cb.lower(root.get("location")), p));
+                        }
                     }
+
+                    // If modality allows remote, also include worldwide/global/emea remote positions
+                    if (modality == null || modality == JobModality.REMOTO_100) {
+                        Predicate isRemotePred = cb.equal(root.get("isRemote"), true);
+                        spainPreds.add(cb.and(isRemotePred, cb.or(
+                                cb.like(cb.lower(root.get("country")), "%worldwide%"),
+                                cb.like(cb.lower(root.get("country")), "%europa%"),
+                                cb.like(cb.lower(root.get("country")), "%europe%"),
+                                cb.like(cb.lower(root.get("location")), "%remote%"),
+                                cb.like(cb.lower(root.get("location")), "%worldwide%"),
+                                cb.like(cb.lower(root.get("location")), "%europe%"),
+                                cb.like(cb.lower(root.get("location")), "%emea%")
+                        )));
+                    }
+
+                    geoPredicates.add(cb.or(spainPreds.toArray(new Predicate[0])));
                 } else {
-                    geoPredicates.add(countryPred);
+                    // Other country: search both country and location fields
+                    geoPredicates.add(cb.or(
+                            cb.like(cb.lower(root.get("country")), "%" + countryNorm + "%"),
+                            cb.like(cb.lower(root.get("location")), "%" + countryNorm + "%")
+                    ));
                 }
             } else if (location != null && !location.trim().isEmpty()) {
                 // Generic location text fallback

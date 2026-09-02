@@ -1,9 +1,8 @@
 package com.jobaggregator.personal.client.jobicy;
 
 import com.jobaggregator.personal.client.JobIngestionClient;
-import com.jobaggregator.personal.model.JobOffer;
-import com.jobaggregator.personal.model.JobSource;
-import com.jobaggregator.personal.model.JobStatus;
+import com.jobaggregator.personal.model.*;
+import com.jobaggregator.personal.service.SpanishGeographyService;
 import com.jobaggregator.personal.service.TechnologyParserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -23,6 +22,7 @@ public class JobicyClient implements JobIngestionClient {
 
     private final RestClient restClient;
     private final TechnologyParserService technologyParserService;
+    private final SpanishGeographyService spanishGeographyService;
 
     @Value("${jobs.jobicy.enabled:true}")
     private boolean enabled;
@@ -86,11 +86,15 @@ public class JobicyClient implements JobIngestionClient {
                 cleanFull,
                 item.getJobType()
         );
+        Set<String> studies = technologyParserService.extractStudyLevels(item.getJobTitle(), cleanFull, techs);
 
         LocalDateTime pubDate = parseDate(item.getPubDate());
         String location = (item.getJobGeo() != null && !item.getJobGeo().isBlank()) 
                 ? item.getJobGeo().trim() 
                 : "España / Remoto";
+
+        JobModality modality = technologyParserService.inferModality(true, location, cleanFull);
+        SpanishGeographyService.GeoResult geo = spanishGeographyService.inferGeography(location, item.getJobTitle(), cleanFull, true);
 
         return JobOffer.builder()
                 .externalId(item.getId() != null ? String.valueOf(item.getId()) : UUID.randomUUID().toString())
@@ -101,10 +105,16 @@ public class JobicyClient implements JobIngestionClient {
                 .url(item.getUrl().trim())
                 .publishedDate(pubDate)
                 .requiredTechnologies(techs)
+                .studyLevels(studies)
                 .status(JobStatus.NUEVA)
                 .source(JobSource.JOBICY)
+                .modality(modality)
                 .isRemote(true)
                 .location(location)
+                .continent(geo.continent())
+                .country(geo.country())
+                .autonomousCommunity(geo.autonomousCommunity())
+                .provinceOrCity(geo.provinceOrCity())
                 .build();
     }
 

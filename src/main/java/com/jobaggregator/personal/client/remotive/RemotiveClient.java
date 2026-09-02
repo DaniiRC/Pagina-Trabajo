@@ -1,9 +1,8 @@
 package com.jobaggregator.personal.client.remotive;
 
 import com.jobaggregator.personal.client.JobIngestionClient;
-import com.jobaggregator.personal.model.JobOffer;
-import com.jobaggregator.personal.model.JobSource;
-import com.jobaggregator.personal.model.JobStatus;
+import com.jobaggregator.personal.model.*;
+import com.jobaggregator.personal.service.SpanishGeographyService;
 import com.jobaggregator.personal.service.TechnologyParserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -23,6 +22,7 @@ public class RemotiveClient implements JobIngestionClient {
 
     private final RestClient restClient;
     private final TechnologyParserService technologyParserService;
+    private final SpanishGeographyService spanishGeographyService;
 
     @Value("${jobs.remotive.enabled:true}")
     private boolean enabled;
@@ -92,6 +92,11 @@ public class RemotiveClient implements JobIngestionClient {
                 cleanDescription,
                 item.getTags()
         );
+        Set<String> studies = technologyParserService.extractStudyLevels(item.getTitle(), fullDescription, techs);
+
+        String rawLocation = item.getCandidateRequiredLocation() != null ? item.getCandidateRequiredLocation().trim() : "Remote";
+        JobModality modality = technologyParserService.inferModality(true, rawLocation, fullDescription);
+        SpanishGeographyService.GeoResult geo = spanishGeographyService.inferGeography(rawLocation, item.getTitle(), fullDescription, true);
 
         LocalDateTime pubDate = parseDate(item.getPublicationDate());
 
@@ -104,10 +109,16 @@ public class RemotiveClient implements JobIngestionClient {
                 .url(item.getUrl().trim())
                 .publishedDate(pubDate)
                 .requiredTechnologies(techs)
+                .studyLevels(studies)
                 .status(JobStatus.NUEVA)
                 .source(JobSource.REMOTIVE)
+                .modality(modality)
                 .isRemote(true)
-                .location(item.getCandidateRequiredLocation() != null ? item.getCandidateRequiredLocation() : "Remote")
+                .location(rawLocation)
+                .continent(geo.continent())
+                .country(geo.country())
+                .autonomousCommunity(geo.autonomousCommunity())
+                .provinceOrCity(geo.provinceOrCity())
                 .build();
     }
 
