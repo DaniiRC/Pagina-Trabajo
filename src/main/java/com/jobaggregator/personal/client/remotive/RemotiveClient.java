@@ -67,6 +67,21 @@ public class RemotiveClient implements JobIngestionClient {
                         if (item.getUrl() == null || seenUrls.contains(item.getUrl())) {
                             continue;
                         }
+
+                        // Filtrar y priorizar mercado europeo, español y mundial
+                        String loc = item.getCandidateRequiredLocation() != null 
+                                ? item.getCandidateRequiredLocation().toLowerCase() 
+                                : "";
+                        boolean isTargetRegion = loc.contains("europe") || loc.contains("europa") 
+                                || loc.contains("spain") || loc.contains("españa") 
+                                || loc.contains("uk") || loc.contains("united kingdom") 
+                                || loc.contains("worldwide") || loc.contains("global") 
+                                || loc.contains("anywhere") || loc.isBlank();
+
+                        if (!isTargetRegion) {
+                            continue;
+                        }
+
                         seenUrls.add(item.getUrl());
 
                         JobOffer offer = mapToJobOffer(item);

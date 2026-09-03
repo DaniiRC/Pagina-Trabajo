@@ -27,21 +27,32 @@ jobs:
     jobicy:
       enabled: true
     tecnoempleo:
-      enabled: false
+      enabled: true
+      url: "${TECNOEMPLEO_RSS_URL:https://www.tecnoempleo.com/rss.xml}"
     manfred:
-      enabled: false
+      enabled: true
     adzuna:
       enabled: true
+    linkedin:
+      enabled: true
 
-# InfoJobs API credentials (set via environment variables in Render)
+# InfoJobs API (OAuth Basic Auth: Set INFOJOBS_CLIENT_ID and INFOJOBS_CLIENT_SECRET in Render)
 infojobs:
   client:
     id: "${INFOJOBS_CLIENT_ID:}"
     secret: "${INFOJOBS_CLIENT_SECRET:}"
 
-# Adzuna Spain API (free tier, register at https://developer.adzuna.com)
+# Google Custom Search API for site:es.linkedin.com/jobs (Set GOOGLE_SEARCH_API_KEY and GOOGLE_SEARCH_CX in Render)
+google:
+  search:
+    api:
+      key: "${GOOGLE_SEARCH_API_KEY:}"
+    cx: "${GOOGLE_SEARCH_CX:}"
+
+# Adzuna Spain API (Free tier: Set ADZUNA_APP_ID and ADZUNA_APP_KEY in Render)
 adzuna:
   app:
     id: "${ADZUNA_APP_ID:}"
     key: "${ADZUNA_APP_KEY:}"
+
 

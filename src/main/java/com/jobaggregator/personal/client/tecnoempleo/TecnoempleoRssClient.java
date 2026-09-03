@@ -13,7 +13,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-import java.net.URL;
+import java.io.InputStream;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.*;
@@ -26,16 +31,11 @@ public class TecnoempleoRssClient implements JobIngestionClient {
     private final TechnologyParserService technologyParserService;
     private final SpanishGeographyService spanishGeographyService;
 
-    @Value("${jobs.tecnoempleo.enabled:false}")
+    @Value("${jobs.tecnoempleo.enabled:true}")
     private boolean enabled;
 
-    // Public RSS feeds for IT/tech jobs in Spain (category pages)
-    private static final List<String> RSS_FEEDS = List.of(
-        "https://www.tecnoempleo.com/rss/ofertas-empleo.xml",
-        "https://www.tecnoempleo.com/rss/ofertas-empleo.xml?te=java,spring",
-        "https://www.tecnoempleo.com/rss/ofertas-empleo.xml?te=linux,docker",
-        "https://www.tecnoempleo.com/rss/ofertas-empleo.xml?te=redes,sistemas"
-    );
+    @Value("${jobs.tecnoempleo.url:https://www.tecnoempleo.com/rss.xml}")
+    private String primaryRssUrl;
 
     @Override
     public JobSource getSource() {
@@ -45,45 +45,80 @@ public class TecnoempleoRssClient implements JobIngestionClient {
     @Override
     public List<JobOffer> fetchJobs() {
         if (!enabled) {
-            log.info("Tecnoempleo RSS client disabled.");
+            log.info("Tecnoempleo RSS client is disabled in configuration.");
             return Collections.emptyList();
         }
 
         List<JobOffer> results = new ArrayList<>();
         Set<String> seenUrls = new HashSet<>();
 
-        for (String feedUrl : RSS_FEEDS) {
+        List<String> urlsToTry = List.of(
+                primaryRssUrl,
+                "https://www.tecnoempleo.com/rss/ofertas-empleo.xml"
+        );
+
+        HttpClient httpClient = HttpClient.newBuilder()
+                .connectTimeout(Duration.ofSeconds(10))
+                .followRedirects(HttpClient.Redirect.NORMAL)
+                .build();
+
+        for (String feedUrl : urlsToTry) {
             try {
-                log.info("Fetching Tecnoempleo RSS: {}", feedUrl);
-                SyndFeedInput input = new SyndFeedInput();
-                SyndFeed feed = input.build(new XmlReader(new URL(feedUrl)));
+                log.info("Attempting to fetch Tecnoempleo RSS from: {}", feedUrl);
 
-                for (SyndEntry entry : feed.getEntries()) {
-                    String link = entry.getLink();
-                    if (link == null || link.isBlank() || seenUrls.contains(link)) continue;
-                    seenUrls.add(link);
+                HttpRequest request = HttpRequest.newBuilder()
+                        .uri(URI.create(feedUrl))
+                        .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36")
+                        .header("Accept", "application/rss+xml, application/xml, text/xml, */*")
+                        .timeout(Duration.ofSeconds(15))
+                        .GET()
+                        .build();
 
-                    JobOffer offer = mapToJobOffer(entry);
-                    if (offer != null) results.add(offer);
+                HttpResponse<InputStream> response = httpClient.send(request, HttpResponse.BodyHandlers.ofInputStream());
+
+                if (response.statusCode() >= 200 && response.statusCode() < 300) {
+                    try (InputStream is = response.body()) {
+                        SyndFeedInput input = new SyndFeedInput();
+                        SyndFeed feed = input.build(new XmlReader(is));
+
+                        for (SyndEntry entry : feed.getEntries()) {
+                            String link = entry.getLink();
+                            if (link == null || link.isBlank() || seenUrls.contains(link.trim())) {
+                                continue;
+                            }
+                            seenUrls.add(link.trim());
+
+                            JobOffer offer = mapToJobOffer(entry);
+                            if (offer != null) {
+                                results.add(offer);
+                            }
+                        }
+                    }
+                    // If successfully fetched first feed, don't need redundant fallback
+                    if (!results.isEmpty()) {
+                        break;
+                    }
+                } else {
+                    log.error("Tecnoempleo RSS returned HTTP status {}: {}", response.statusCode(), feedUrl);
                 }
+
             } catch (Exception e) {
-                log.warn("Could not fetch Tecnoempleo RSS feed {}: {}", feedUrl, e.getMessage());
+                log.error("Could not parse Tecnoempleo RSS feed [{}]: {}", feedUrl, e.getMessage());
             }
         }
 
-        log.info("Tecnoempleo ingestion finished. Total: {}", results.size());
+        log.info("Tecnoempleo ingestion finished. Total offers retrieved: {}", results.size());
         return results;
     }
 
     private JobOffer mapToJobOffer(SyndEntry entry) {
-        String title = entry.getTitle();
-        String link = entry.getLink();
+        String title = entry.getTitle() != null ? entry.getTitle().trim() : "Oferta Técnica";
+        String link = entry.getLink() != null ? entry.getLink().trim() : "";
         String description = entry.getDescription() != null ? entry.getDescription().getValue() : "";
 
         String cleanDesc = technologyParserService.cleanHtmlDescription(description);
         String cleanFull = technologyParserService.cleanFullDescription(description);
 
-        // Tecnoempleo puts location info in the title like: "Java Developer - Madrid"
         String rawLocation = extractLocationFromTitle(title);
         SpanishGeographyService.GeoResult geo = spanishGeographyService.inferGeography(
                 rawLocation, title, cleanDesc, null
@@ -97,17 +132,16 @@ public class TecnoempleoRssClient implements JobIngestionClient {
                 ? entry.getPublishedDate().toInstant().atZone(ZoneId.of("Europe/Madrid")).toLocalDateTime()
                 : LocalDateTime.now();
 
-        // Extract company name (often after last " - " in title)
         String cleanTitle = title;
         String companyName = "Empresa en Tecnoempleo";
-        if (title != null && title.contains(" - ")) {
+        if (title.contains(" - ")) {
             String[] parts = title.split(" - ");
             cleanTitle = parts[0].trim();
             companyName = parts.length > 1 ? parts[parts.length - 1].trim() : companyName;
         }
 
         return JobOffer.builder()
-                .externalId(link)
+                .externalId("tecnoempleo-" + (link.isBlank() ? UUID.randomUUID().toString() : link))
                 .title(cleanTitle)
                 .companyName(companyName)
                 .shortDescription(cleanDesc)
@@ -122,7 +156,7 @@ public class TecnoempleoRssClient implements JobIngestionClient {
                 .isRemote(modality == JobModality.REMOTO_100)
                 .location(rawLocation != null ? rawLocation : "España")
                 .continent(geo.continent() != null ? geo.continent() : "Europa")
-                .country(geo.country() != null ? geo.country() : "España")
+                .country("España")
                 .autonomousCommunity(geo.autonomousCommunity())
                 .provinceOrCity(geo.provinceOrCity())
                 .build();
@@ -130,7 +164,6 @@ public class TecnoempleoRssClient implements JobIngestionClient {
 
     private String extractLocationFromTitle(String title) {
         if (title == null) return "España";
-        // Try to find known Spanish cities/provinces at the end of title
         for (Map.Entry<String, List<String>> entry : SpanishGeographyService.COMMUNITIES_AND_PROVINCES.entrySet()) {
             for (String province : entry.getValue()) {
                 if (title.toLowerCase().contains(province.toLowerCase())) {
@@ -139,7 +172,7 @@ public class TecnoempleoRssClient implements JobIngestionClient {
             }
         }
         if (title.toLowerCase().contains("remoto") || title.toLowerCase().contains("teletrabajo")) {
-            return "Remoto, España";
+            return "España · Remoto";
         }
         return "España";
     }

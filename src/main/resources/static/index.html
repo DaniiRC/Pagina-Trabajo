@@ -1013,6 +1013,7 @@
                 'TECNOEMPLEO': 'bg-orange-950/50 border-orange-800/40 text-orange-400',
                 'MANFRED': 'bg-indigo-950/50 border-indigo-800/40 text-indigo-400',
                 'ADZUNA': 'bg-emerald-950/50 border-emerald-800/40 text-emerald-400',
+                'LINKEDIN': 'bg-blue-900/50 border-blue-700/50 text-blue-300',
             };
             const labels = {
                 'JOBICY':'Jobicy',
@@ -1022,7 +1023,8 @@
                 'INFOJOBS':'InfoJobs',
                 'TECNOEMPLEO':'Tecnoempleo',
                 'MANFRED':'Manfred',
-                'ADZUNA':'Adzuna ES'
+                'ADZUNA':'Adzuna ES',
+                'LINKEDIN':'LinkedIn'
             };
             const cls = map[source] || 'bg-[#0d0f18] border-[#1a1d2e] text-zinc-500';
             return `<span class="px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-widest rounded-md border ${cls}">${labels[source]||source}</span>`;

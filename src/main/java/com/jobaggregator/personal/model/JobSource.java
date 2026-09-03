@@ -8,7 +8,8 @@ public enum JobSource {
     INFOJOBS,
     TECNOEMPLEO,
     MANFRED,
-    ADZUNA
+    ADZUNA,
+    LINKEDIN
 }
 
 
