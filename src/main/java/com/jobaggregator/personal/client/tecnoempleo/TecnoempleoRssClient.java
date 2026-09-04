@@ -58,7 +58,7 @@ public class TecnoempleoRssClient implements JobIngestionClient {
         );
 
         HttpClient httpClient = HttpClient.newBuilder()
-                .connectTimeout(Duration.ofSeconds(10))
+                .connectTimeout(Duration.ofSeconds(4))
                 .followRedirects(HttpClient.Redirect.NORMAL)
                 .build();
 
@@ -70,7 +70,7 @@ public class TecnoempleoRssClient implements JobIngestionClient {
                         .uri(URI.create(feedUrl))
                         .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36")
                         .header("Accept", "application/rss+xml, application/xml, text/xml, */*")
-                        .timeout(Duration.ofSeconds(15))
+                        .timeout(Duration.ofSeconds(6))
                         .GET()
                         .build();
 

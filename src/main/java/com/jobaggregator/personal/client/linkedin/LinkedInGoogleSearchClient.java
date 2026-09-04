@@ -59,30 +59,20 @@ public class LinkedInGoogleSearchClient implements JobIngestionClient {
         boolean hasGoogleCredentials = googleApiKey != null && !googleApiKey.isBlank()
                 && googleSearchEngineId != null && !googleSearchEngineId.isBlank();
 
-        Map<String, String> studyProfiles = studyKeywordMapperService.getAllStudyMappings();
+        if (!hasGoogleCredentials) {
+            log.info("LinkedIn client: GOOGLE_SEARCH_API_KEY and GOOGLE_SEARCH_CX are not set in environment. Skipping LinkedIn to prevent IP blocking. Set them in Render to enable.");
+            return Collections.emptyList();
+        }
 
-        boolean guestApiBlocked = false;
+        Map<String, String> studyProfiles = studyKeywordMapperService.getAllStudyMappings();
 
         for (Map.Entry<String, String> entry : studyProfiles.entrySet()) {
             String studyName = entry.getKey();
             String keywords = entry.getValue();
 
-            if (guestApiBlocked && !hasGoogleCredentials) {
-                break;
-            }
-
             try {
-                if (hasGoogleCredentials) {
-                    fetchViaGoogleCustomSearch(studyName, keywords, results, seenUrls);
-                } else {
-                    boolean success = fetchViaLinkedInGuestApi(studyName, keywords, results, seenUrls);
-                    if (!success) {
-                        guestApiBlocked = true;
-                        log.warn("LinkedIn guest search is rate-limited or blocked on current IP. Skipping remaining profiles. Tip: configure GOOGLE_SEARCH_API_KEY and GOOGLE_SEARCH_CX in Render.");
-                    }
-                }
-
-                Thread.sleep(300); // Politeness delay between queries
+                fetchViaGoogleCustomSearch(studyName, keywords, results, seenUrls);
+                Thread.sleep(200); // Politeness delay between queries
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 break;

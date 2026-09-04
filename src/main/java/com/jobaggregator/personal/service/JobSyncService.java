@@ -159,7 +159,7 @@ public class JobSyncService {
         // Wait for all fetches to complete with timeout
         try {
             CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]))
-                    .get(35, TimeUnit.SECONDS);
+                    .get(12, TimeUnit.SECONDS);
         } catch (Exception e) {
             log.warn("Sync parallel fetch completed with timeout/interruption: {}", e.getMessage());
         }

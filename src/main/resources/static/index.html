@@ -846,7 +846,14 @@
 
             try {
                 const res = await fetch('/api/sync', { method: 'POST' });
-                if (!res.ok) throw new Error('Error de respuesta del servidor');
+                if (!res.ok) {
+                    let errDetail = `HTTP ${res.status}`;
+                    try {
+                        const errJson = await res.json();
+                        if (errJson && errJson.message) errDetail = errJson.message;
+                    } catch (_) {}
+                    throw new Error(errDetail);
+                }
                 const r = await res.json();
                 
                 showSyncResults(r);

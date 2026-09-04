@@ -40,18 +40,12 @@ public class AdzunaClient implements JobIngestionClient {
 
     private static final String BASE_URL = "https://api.adzuna.com/v1/api/jobs/es/search/1";
 
-    // Tech-focused search terms for Spain
+    // Consolidated tech-focused search terms for Spain
     private static final List<String> SEARCH_TERMS = List.of(
-            "desarrollador software",
-            "programador java",
-            "programador python",
-            "devops",
-            "administrador sistemas",
-            "redes informatica",
-            "ciberseguridad",
-            "frontend developer",
-            "backend developer",
-            "fullstack"
+            "desarrollador software programador",
+            "frontend backend fullstack developer",
+            "devops cloud sistemas linux",
+            "ciberseguridad redes informatica"
     );
 
     @Override
@@ -76,9 +70,9 @@ public class AdzunaClient implements JobIngestionClient {
         for (String term : SEARCH_TERMS) {
             try {
                 String uri = UriComponentsBuilder.fromHttpUrl(BASE_URL)
-                        .queryParam("app_id", appId)
-                        .queryParam("app_key", appKey)
-                        .queryParam("results_per_page", 20)
+                        .queryParam("app_id", appId.trim())
+                        .queryParam("app_key", appKey.trim())
+                        .queryParam("results_per_page", 25)
                         .queryParam("what", term)
                         .queryParam("content-type", "application/json")
                         .build()
@@ -101,7 +95,7 @@ public class AdzunaClient implements JobIngestionClient {
                 }
 
                 // Rate limit protection
-                Thread.sleep(400);
+                Thread.sleep(150);
 
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
