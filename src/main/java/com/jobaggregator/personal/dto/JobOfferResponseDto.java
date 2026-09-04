@@ -40,6 +40,8 @@ public class JobOfferResponseDto {
     private Double salaryMax;
     private String salaryCurrency;
     private LocalDateTime createdAt;
+    /** 0-100 affinity score for junior DAM/DAW/ASIR profile. Set by JobOfferService. */
+    private Integer juniorScore;
 
     public static JobOfferResponseDto fromEntity(JobOffer entity) {
         if (entity == null) return null;

@@ -23,6 +23,7 @@ public class JobOfferService {
 
     private final JobOfferRepository jobOfferRepository;
     private final SpanishGeographyService spanishGeographyService;
+    private final TechnologyParserService technologyParserService;
 
     @Transactional(readOnly = true)
     public Page<JobOfferResponseDto> getOffers(
@@ -48,7 +49,13 @@ public class JobOfferService {
         Specification<JobOffer> spec = buildSpec(status, keyword, technology, isRemote,
                 location, country, community, province, modality, studyLevels);
 
-        return jobOfferRepository.findAll(spec, pageable).map(JobOfferResponseDto::fromEntity);
+        return jobOfferRepository.findAll(spec, pageable).map(entity -> {
+            JobOfferResponseDto dto = JobOfferResponseDto.fromEntity(entity);
+            dto.setJuniorScore(technologyParserService.computeJuniorScore(
+                    entity.getTitle(), entity.getFullDescription(),
+                    entity.getRequiredTechnologies(), entity.getStudyLevels()));
+            return dto;
+        });
     }
 
     private Specification<JobOffer> buildSpec(
@@ -137,36 +144,63 @@ public class JobOfferService {
                 String countryNorm = normalizeForSearch(country);
 
                 if ("espana".equals(countryNorm) || "spain".equals(countryNorm) || "españa".equals(countryNorm)) {
-                    // Strict Spain filter: only offers verified as Spain or with Spanish locations/CCAA/provinces
-                    List<Predicate> spainPreds = new ArrayList<>();
-                    spainPreds.add(cb.equal(cb.lower(root.get("country")), "españa"));
-                    spainPreds.add(cb.equal(cb.lower(root.get("country")), "spain"));
-                    spainPreds.add(cb.isNotNull(root.get("autonomousCommunity")));
-                    spainPreds.add(cb.like(cb.lower(root.get("location")), "%spain%"));
-                    spainPreds.add(cb.like(cb.lower(root.get("location")), "%españa%"));
-                    spainPreds.add(cb.like(cb.lower(root.get("location")), "%espana%"));
+                    // === FILTRO ESPAÑA ESTRICTO ===
+                    // Solo incluye ofertas donde country es EXPLÍCITAMENTE España,
+                    // o donde la ubicación menciona una provincia/ciudad española.
+                    // EXCLUYE cualquier oferta con country de otro país conocido,
+                    // aunque autonomousCommunity esté relleno (bug anterior).
 
-                    // Include any offer where location mentions a Spanish province
+                    // Bloque 1: country explícitamente asignado como España
+                    List<Predicate> explicitSpain = new ArrayList<>();
+                    explicitSpain.add(cb.equal(cb.lower(root.get("country")), "españa"));
+                    explicitSpain.add(cb.equal(cb.lower(root.get("country")), "spain"));
+
+                    // Bloque 2: location o provinceOrCity contiene referencia española
+                    List<Predicate> locationSpain = new ArrayList<>();
+                    locationSpain.add(cb.like(cb.lower(root.get("location")), "%spain%"));
+                    locationSpain.add(cb.like(cb.lower(root.get("location")), "%españa%"));
+                    locationSpain.add(cb.like(cb.lower(root.get("location")), "%espana%"));
+
+                    // Añadir provincias y ciudades españolas
                     for (List<String> provinces : spanishGeographyService.getSpanishGeographyTree().values()) {
                         for (String prov : provinces) {
                             String p = "%" + normalizeForSearch(prov) + "%";
-                            spainPreds.add(cb.like(cb.lower(root.get("location")), p));
+                            locationSpain.add(cb.like(cb.lower(root.get("location")), p));
+                            locationSpain.add(cb.like(cb.lower(root.get("provinceOrCity")), p));
                         }
                     }
 
-                    // Must NOT match other countries
-                    Predicate notOtherCountry = cb.and(
-                            cb.notEqual(cb.lower(root.get("country")), "reino unido"),
-                            cb.notEqual(cb.lower(root.get("country")), "alemania"),
-                            cb.notEqual(cb.lower(root.get("country")), "francia"),
-                            cb.notEqual(cb.lower(root.get("country")), "estados unidos"),
-                            cb.notEqual(cb.lower(root.get("country")), "polonia"),
-                            cb.notEqual(cb.lower(root.get("country")), "italia"),
-                            cb.notEqual(cb.lower(root.get("country")), "países bajos"),
-                            cb.notEqual(cb.lower(root.get("country")), "europa")
+                    // Predicado positivo: (country = España) O (location menciona España)
+                    Predicate isSpain = cb.or(
+                            cb.or(explicitSpain.toArray(new Predicate[0])),
+                            cb.or(locationSpain.toArray(new Predicate[0]))
                     );
 
-                    geoPredicates.add(cb.and(cb.or(spainPreds.toArray(new Predicate[0])), notOtherCountry));
+                    // Predicado negativo: country NO es otro país conocido
+                    List<String> otherCountries = List.of(
+                            "reino unido", "uk", "united kingdom",
+                            "alemania", "germany", "deutschland",
+                            "francia", "france",
+                            "estados unidos", "usa", "united states",
+                            "polonia", "poland",
+                            "italia", "italy",
+                            "países bajos", "netherlands", "holanda",
+                            "portugal", "brasil", "brazil",
+                            "argentina", "méxico", "mexico",
+                            "colombia", "chile", "peru",
+                            "rumania", "romania",
+                            "irlanda", "ireland",
+                            "suecia", "sweden",
+                            "noruega", "norway",
+                            "dinamarca", "denmark"
+                    );
+                    List<Predicate> notOtherPreds = new ArrayList<>();
+                    for (String other : otherCountries) {
+                        notOtherPreds.add(cb.notEqual(cb.lower(root.get("country")), other));
+                    }
+                    Predicate notOtherCountry = cb.and(notOtherPreds.toArray(new Predicate[0]));
+
+                    geoPredicates.add(cb.and(isSpain, notOtherCountry));
 
                 } else if ("worldwide".equals(countryNorm) || "internacional".equals(countryNorm) || "global".equals(countryNorm)) {
                     geoPredicates.add(cb.or(
@@ -212,7 +246,11 @@ public class JobOfferService {
     public JobOfferResponseDto getOfferById(Long id) {
         JobOffer offer = jobOfferRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("No se encontró la oferta con id: " + id));
-        return JobOfferResponseDto.fromEntity(offer);
+        JobOfferResponseDto dto = JobOfferResponseDto.fromEntity(offer);
+        dto.setJuniorScore(technologyParserService.computeJuniorScore(
+                offer.getTitle(), offer.getFullDescription(),
+                offer.getRequiredTechnologies(), offer.getStudyLevels()));
+        return dto;
     }
 
     @Transactional

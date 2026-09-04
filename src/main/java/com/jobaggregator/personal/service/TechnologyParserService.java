@@ -149,6 +149,82 @@ public class TechnologyParserService {
         return descTechPattern.matcher(descNorm).find();
     }
 
+    /**
+     * Returns true if the offer does NOT appear to require senior-level experience.
+     * Rejects offers explicitly requiring 5+ years of experience, architect/lead roles, etc.
+     */
+    public boolean isJuniorFriendly(String title, String description) {
+        String titleNorm = SpanishGeographyService.removeAccents(title != null ? title.toLowerCase() : "");
+        String descNorm  = SpanishGeographyService.removeAccents(description != null ? description.toLowerCase() : "");
+        String combined  = titleNorm + " " + descNorm;
+
+        // Reject explicit seniority signals in title
+        Pattern seniorTitlePattern = Pattern.compile(
+            "\\b(senior|sr\\.|lead|principal|staff|architect|arquitecto|cto|vp of engineering|" +
+            "head of|director of|jefe de desarrollo|tech lead|engineering manager)\\b",
+            Pattern.CASE_INSENSITIVE
+        );
+        if (seniorTitlePattern.matcher(titleNorm).find()) {
+            return false;
+        }
+
+        // Reject if description requires many years of experience
+        Pattern yearsPattern = Pattern.compile(
+            "\\b([5-9]|1[0-9]|20)\\s*\\+?\\s*(a[ñn]os?|years?)\\s*(de\\s+)?(experiencia|experience)\\b|" +
+            "\\b(experiencia|experience)\\s*(de|of|:)?\\s*([5-9]|1[0-9]|20)\\s*\\+?\\s*(a[ñn]os?|years?)\\b|" +
+            "\\bminimum\\s+([5-9]|1[0-9])\\s*years?\\b|" +
+            "\\b([5-9]\\+|1[0-9]\\+)\\s*years?\\b",
+            Pattern.CASE_INSENSITIVE
+        );
+        if (yearsPattern.matcher(combined).find()) {
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Computes a 0-100 junior DAM/DAW/ASIR affinity score for the offer.
+     * Higher = better match for a junior developer profile.
+     */
+    public int computeJuniorScore(String title, String description, Set<String> technologies, Set<String> studyLevels) {
+        int score = 50; // base score
+
+        // +points for relevant study levels
+        if (studyLevels != null) {
+            if (studyLevels.contains("DAM"))   score += 15;
+            if (studyLevels.contains("DAW"))   score += 12;
+            if (studyLevels.contains("ASIR"))  score += 10;
+            if (studyLevels.contains("SMR"))   score +=  8;
+            if (studyLevels.contains("DEVOPS")) score += 8;
+            if (studyLevels.contains("GRADO_INFORMATICA")) score -= 5;
+            if (studyLevels.contains("INGENIERIA")) score -= 15;
+        }
+
+        // +points for junior/trainee keywords
+        String combined = SpanishGeographyService.removeAccents(
+            ((title != null ? title : "") + " " + (description != null ? description : "")).toLowerCase()
+        );
+        if (Pattern.compile("\\b(junior|jr\\.?|grad(uado|uate)|trainee|becario|recien titulado|sin experiencia|poca experiencia|primer empleo)\\b",
+                Pattern.CASE_INSENSITIVE).matcher(combined).find()) {
+            score += 20;
+        }
+
+        // +points for DAM-relevant techs
+        Set<String> damTechs = Set.of("Java", "Spring Boot", "Kotlin", "Flutter", "Android", "React Native", "SQL", "MySQL", "PostgreSQL");
+        Set<String> dawTechs = Set.of("React", "Vue.js", "Angular", "TypeScript", "JavaScript", "Node.js", "PHP", "REST API");
+        if (technologies != null) {
+            for (String t : technologies) {
+                if (damTechs.contains(t) || dawTechs.contains(t)) score += 3;
+            }
+        }
+
+        // -points for senior signals
+        if (!isJuniorFriendly(title, description)) score -= 40;
+
+        return Math.max(0, Math.min(100, score));
+    }
+
     public Set<String> extractStudyLevels(String title, String description, Set<String> technologies) {
         Set<String> studies = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
         String combined = ((title != null ? title : "") + " " + (description != null ? description : "")).toLowerCase();

@@ -182,6 +182,12 @@ public class JobSyncService {
                                 continue;
                             }
 
+                            // Anti-senior filter: skip offers clearly requiring senior/lead/architect profiles
+                            if (!technologyParserService.isJuniorFriendly(offer.getTitle(), offer.getFullDescription())) {
+                                log.debug("Skipping senior-only offer: {}", offer.getTitle());
+                                continue;
+                            }
+
                             String cleanUrl = offer.getUrl().trim();
                             Optional<JobOffer> existingOpt = jobOfferRepository.findByUrl(cleanUrl);
                             if (existingOpt.isPresent()) {
