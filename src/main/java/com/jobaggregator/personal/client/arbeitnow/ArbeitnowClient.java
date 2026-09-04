@@ -74,6 +74,12 @@ public class ArbeitnowClient implements JobIngestionClient {
         String cleanDescription = technologyParserService.cleanHtmlDescription(item.getDescription());
         String fullDescription = technologyParserService.cleanFullDescription(item.getDescription());
         Set<String> techs = technologyParserService.extractTechnologies(item.getTitle(), cleanDescription, item.getTags());
+
+        // Strictly filter out non-tech jobs (e.g. Spa Manager, Marketing Lead without tech)
+        if (!technologyParserService.isTechJob(item.getTitle(), fullDescription, item.getTags(), techs)) {
+            return null;
+        }
+
         Set<String> studies = technologyParserService.extractStudyLevels(item.getTitle(), fullDescription, techs);
         boolean remote = item.getRemote() != null ? item.getRemote() : true;
         String rawLoc = item.getLocation() != null ? item.getLocation() : (remote ? "Remote / Europe" : "Europa");

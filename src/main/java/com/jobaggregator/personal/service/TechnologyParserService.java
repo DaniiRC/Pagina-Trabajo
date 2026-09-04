@@ -101,36 +101,84 @@ public class TechnologyParserService {
         return detected;
     }
 
+    public boolean isTechJob(String title, String description, Collection<String> tags, Set<String> detectedTechs) {
+        if (detectedTechs != null && !detectedTechs.isEmpty()) {
+            return true;
+        }
+
+        String titleNorm = SpanishGeographyService.removeAccents(title != null ? title.toLowerCase() : "");
+        String descNorm = SpanishGeographyService.removeAccents(description != null ? description.toLowerCase() : "");
+
+        // Obvious non-tech roles to explicitly reject
+        Pattern nonTechPattern = Pattern.compile(
+                "\\b(spa|beauty|wellness|massage|masajista|nurse|enfermero|enfermera|physiotherapist|fisioterapeuta|cook|chef|cocinero|cocinera|waiter|waitress|camarero|camarera|hotel|receptionist|recepcionista|driver|conductor|conductora|limpieza|cleaner|plumber|electrician|electricista|carpenter|carpintero|real estate|inmobiliaria|accountant|contable|store manager|retail|dependiente|dependienta|sales assistant|cashier|cajero|cajera|athlete|fitness|marketing|ventas|sales representative|hr generalist|recruiter|copywriter|community manager)\\b",
+                Pattern.CASE_INSENSITIVE
+        );
+        if (nonTechPattern.matcher(titleNorm).find()) {
+            return false;
+        }
+
+        // Tech tags check
+        if (tags != null) {
+            for (String tag : tags) {
+                if (tag == null) continue;
+                String t = tag.toLowerCase().trim();
+                if (t.contains("dev") || t.contains("tech") || t.contains("software") || t.contains("engineer") ||
+                    t.contains("program") || t.contains("frontend") || t.contains("backend") || t.contains("fullstack") ||
+                    t.contains("sistemas") || t.contains("cloud") || t.contains("it") || t.contains("data") ||
+                    t.contains("qa") || t.contains("security") || t.contains("web") || t.contains("mobile")) {
+                    return true;
+                }
+            }
+        }
+
+        // Tech role keywords in title
+        Pattern techRolePattern = Pattern.compile(
+                "\\b(desarrollador|desarrolladora|programador|programadora|developer|engineer|ingeniero|ingeniera|software|frontend|backend|fullstack|full-stack|devops|sysadmin|sistemas|soporte tecnico|helpdesk|microinformatico|qa|tester|cloud|ciberseguridad|cybersecurity|architect|arquitecto|dba|database|scrum master|product owner|tech lead|mobile developer|android|ios|flutter|data engineer|data scientist|data analyst|machine learning)\\b",
+                Pattern.CASE_INSENSITIVE
+        );
+        if (techRolePattern.matcher(titleNorm).find()) {
+            return true;
+        }
+
+        // Check if description has strong tech indicators (with word boundary regex)
+        Pattern descTechPattern = Pattern.compile(
+                "\\b(software|programacion|programming|desarrollo de software|desarrollador|base de datos|database|api rest|rest api|linux|cloud computing|kubernetes|docker|microservicios|backend|frontend)\\b",
+                Pattern.CASE_INSENSITIVE
+        );
+        return descTechPattern.matcher(descNorm).find();
+    }
+
     public Set<String> extractStudyLevels(String title, String description, Set<String> technologies) {
         Set<String> studies = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
         String combined = ((title != null ? title : "") + " " + (description != null ? description : "")).toLowerCase();
 
         // DAM check
-        if (technologies.stream().anyMatch(t -> List.of("Kotlin", "Flutter", "Dart", "Swift", "SwiftUI", "React Native", "Android", "iOS").contains(t)) ||
-            combined.contains("dam") || combined.contains("multiplataforma") || combined.contains("mobile") || combined.contains("movil")) {
+        if ((technologies != null && technologies.stream().anyMatch(t -> List.of("Kotlin", "Flutter", "Dart", "Swift", "SwiftUI", "React Native", "Android", "iOS").contains(t))) ||
+            combined.contains("dam") || combined.contains("multiplataforma") || combined.contains("mobile") || combined.contains("movil") || combined.contains("android") || combined.contains("ios")) {
             studies.add("DAM");
         }
 
         // DAW check
-        if (technologies.stream().anyMatch(t -> List.of("React", "Vue.js", "Angular", "Node.js", "TypeScript", "JavaScript", "PHP", "Spring Boot").contains(t)) ||
-            combined.contains("daw") || combined.contains("frontend") || combined.contains("fullstack") || combined.contains("web")) {
+        if ((technologies != null && technologies.stream().anyMatch(t -> List.of("React", "Vue.js", "Angular", "Node.js", "TypeScript", "JavaScript", "PHP", "Spring Boot", "Django", "FastAPI", "REST API", "GraphQL").contains(t))) ||
+            combined.contains("daw") || combined.contains("frontend") || combined.contains("fullstack") || combined.contains("web developer") || combined.contains("desarrollo web")) {
             studies.add("DAW");
         }
 
         // ASIR check
-        if (technologies.stream().anyMatch(t -> List.of("Linux", "Redes/Networking", "Sysadmin", "Bash/Shell", "PowerShell", "Ciberseguridad", "Nginx", "Apache").contains(t)) ||
+        if ((technologies != null && technologies.stream().anyMatch(t -> List.of("Linux", "Redes/Networking", "Sysadmin", "Bash/Shell", "PowerShell", "Ciberseguridad", "Nginx", "Apache").contains(t))) ||
             combined.contains("asir") || combined.contains("sistemas") || combined.contains("administrador de sistemas") || combined.contains("redes")) {
             studies.add("ASIR");
         }
 
         // SMR check
-        if (combined.contains("smr") || combined.contains("soporte") || combined.contains("helpdesk") || combined.contains("tecnico microinformatico") || combined.contains("mantenimiento")) {
+        if (combined.contains("smr") || combined.contains("soporte") || combined.contains("helpdesk") || combined.contains("tecnico microinformatico") || combined.contains("mantenimiento informatico")) {
             studies.add("SMR");
         }
 
         // DEVOPS check
-        if (technologies.stream().anyMatch(t -> List.of("Docker", "Kubernetes", "DevOps", "CI/CD", "Terraform", "Ansible", "AWS", "Azure", "GCP").contains(t)) ||
-            combined.contains("devops") || combined.contains("cloud") || combined.contains("sre") || combined.contains("infraestructura")) {
+        if ((technologies != null && technologies.stream().anyMatch(t -> List.of("Docker", "Kubernetes", "DevOps", "CI/CD", "Terraform", "Ansible", "AWS", "Azure", "GCP").contains(t))) ||
+            combined.contains("devops") || combined.contains("cloud engineer") || combined.contains("sre") || combined.contains("infraestructura cloud")) {
             studies.add("DEVOPS");
         }
 
@@ -140,8 +188,8 @@ public class TechnologyParserService {
             studies.add("INGENIERIA");
         }
 
-        // If no explicit study found, assign baseline IT profiles
-        if (studies.isEmpty()) {
+        // Only assign baseline IT profiles if the offer is actually a tech job
+        if (studies.isEmpty() && isTechJob(title, description, null, technologies)) {
             studies.add("DAM");
             studies.add("DAW");
             studies.add("ASIR");

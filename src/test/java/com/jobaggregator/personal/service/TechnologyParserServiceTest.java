@@ -45,4 +45,26 @@ class TechnologyParserServiceTest {
         assertFalse(cleaned.contains("&amp;"));
         assertTrue(cleaned.contains("& build awesome systems."));
     }
+
+    @Test
+    void testIsTechJobValidRoles() {
+        assertTrue(parserService.isTechJob("Senior Java Developer", "Spring boot microservices", null, Set.of("Java")));
+        assertTrue(parserService.isTechJob("Administrador de Sistemas Linux", "Mantenimiento servidores", null, Set.of("Linux")));
+        assertTrue(parserService.isTechJob("DevOps Engineer", "Kubernetes cluster management", null, Set.of()));
+        assertTrue(parserService.isTechJob("Tecnico Soporte Helpdesk", "Soporte a usuarios e instalacion de equipos", null, Set.of()));
+    }
+
+    @Test
+    void testIsTechJobRejectNonTechRoles() {
+        assertFalse(parserService.isTechJob("Spa Manager - Fantastic Opportunity", "Leading our wellness team", null, Set.of()));
+        assertFalse(parserService.isTechJob("Performance Marketing Lead", "Digital marketing and ads campaign", null, Set.of()));
+        assertFalse(parserService.isTechJob("Cook / Chef de Partie", "Preparing meals in restaurant kitchen", null, Set.of()));
+        assertFalse(parserService.isTechJob("Enfermero / Enfermera", "Atencion sanitaria en hospital", null, Set.of()));
+    }
+
+    @Test
+    void testNonTechJobStudiesEmpty() {
+        Set<String> studies = parserService.extractStudyLevels("Spa Manager", "Wellness and massage coordinator", Set.of());
+        assertTrue(studies.isEmpty());
+    }
 }

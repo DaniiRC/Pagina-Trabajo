@@ -61,18 +61,28 @@ public class LinkedInGoogleSearchClient implements JobIngestionClient {
 
         Map<String, String> studyProfiles = studyKeywordMapperService.getAllStudyMappings();
 
+        boolean guestApiBlocked = false;
+
         for (Map.Entry<String, String> entry : studyProfiles.entrySet()) {
             String studyName = entry.getKey();
             String keywords = entry.getValue();
+
+            if (guestApiBlocked && !hasGoogleCredentials) {
+                break;
+            }
 
             try {
                 if (hasGoogleCredentials) {
                     fetchViaGoogleCustomSearch(studyName, keywords, results, seenUrls);
                 } else {
-                    fetchViaLinkedInGuestApi(studyName, keywords, results, seenUrls);
+                    boolean success = fetchViaLinkedInGuestApi(studyName, keywords, results, seenUrls);
+                    if (!success) {
+                        guestApiBlocked = true;
+                        log.warn("LinkedIn guest search is rate-limited or blocked on current IP. Skipping remaining profiles. Tip: configure GOOGLE_SEARCH_API_KEY and GOOGLE_SEARCH_CX in Render.");
+                    }
                 }
 
-                Thread.sleep(400); // Politeness delay between queries
+                Thread.sleep(300); // Politeness delay between queries
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 break;
@@ -135,7 +145,7 @@ public class LinkedInGoogleSearchClient implements JobIngestionClient {
      * Modalidad 2: Consulta directa a LinkedIn Jobs en caso de que aún no se hayan configurado
      * las claves de Google Custom Search en Render.
      */
-    private void fetchViaLinkedInGuestApi(String studyName, String keywords, List<JobOffer> results, Set<String> seenUrls) {
+    private boolean fetchViaLinkedInGuestApi(String studyName, String keywords, List<JobOffer> results, Set<String> seenUrls) {
         log.info("Fetching LinkedIn guest jobs for profile '{}' with keywords: '{}'", studyName, keywords);
 
         try {
@@ -154,7 +164,7 @@ public class LinkedInGoogleSearchClient implements JobIngestionClient {
                     .body(String.class);
 
             if (html == null || html.isBlank()) {
-                return;
+                return true;
             }
 
             // Parse job cards from LinkedIn public HTML response
@@ -185,9 +195,11 @@ public class LinkedInGoogleSearchClient implements JobIngestionClient {
                     results.add(offer);
                 }
             }
+            return true;
 
         } catch (Exception e) {
-            log.error("LinkedIn guest endpoint error for '{}': {}", studyName, e.getMessage());
+            log.warn("LinkedIn guest endpoint response for profile '{}': {}", studyName, e.getMessage());
+            return false;
         }
     }
 

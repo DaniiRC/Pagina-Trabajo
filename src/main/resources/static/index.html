@@ -995,12 +995,32 @@
         }
 
         function buildDisplayLocation(job) {
-            if (job.provinceOrCity && job.autonomousCommunity) return `${job.provinceOrCity} (${job.autonomousCommunity})`;
-            if (job.autonomousCommunity) return `${job.autonomousCommunity}, España`;
-            if (job.provinceOrCity) return `${job.provinceOrCity}, España`;
-            if (job.country === 'España') return job.isRemote ? 'España · Remoto' : 'España';
-            if (job.country && job.country !== 'Worldwide' && job.country !== 'Global') return `${job.country}${job.isRemote ? ' · Remoto' : ''}`;
-            return job.location || (job.isRemote ? 'Remoto Global' : 'Ubicación no indicada');
+            if (job.country === 'España' || job.country === 'Spain') {
+                if (job.provinceOrCity && job.autonomousCommunity && job.provinceOrCity !== job.autonomousCommunity) {
+                    return `${job.provinceOrCity} (${job.autonomousCommunity})`;
+                }
+                if (job.provinceOrCity) {
+                    return `${job.provinceOrCity}, España`;
+                }
+                if (job.autonomousCommunity) {
+                    return `${job.autonomousCommunity}, España`;
+                }
+                return job.isRemote ? 'España · 100% Remoto' : 'España';
+            }
+
+            // For European / foreign countries
+            if (job.country && job.country !== 'Worldwide' && job.country !== 'Global' && job.country !== 'Internacional') {
+                if (job.provinceOrCity && job.provinceOrCity !== job.country) {
+                    return `${job.provinceOrCity} (${job.country})`;
+                }
+                if (job.location && job.location !== job.country) {
+                    return `${job.location}`;
+                }
+                return `${job.country}${job.isRemote ? ' · Remoto' : ''}`;
+            }
+
+            if (job.isRemote) return '100% Remoto (Global)';
+            return job.location || 'Ubicación no indicada';
         }
 
         function getSourceBadge(source) {
