@@ -29,14 +29,21 @@ public class SyncController {
 
     @PostMapping
     public ResponseEntity<SyncResultDto> triggerManualSync(
+            jakarta.servlet.http.HttpServletRequest request,
             @org.springframework.web.bind.annotation.RequestHeader(value = "X-Sync-Token", required = false) String headerToken,
             @org.springframework.web.bind.annotation.RequestParam(value = "token", required = false) String paramToken) {
 
-        // 1. Verificación de token si está configurado en variables de entorno
-        if (syncSecretToken != null && !syncSecretToken.isBlank()) {
+        // 1. Verificación de token si está configurado en variables de entorno.
+        // Si la petición proviene directamente de la interfaz web (same-origin o referer coincidente), se permite sin exigir token en el navegador.
+        boolean isSameOrigin = request != null && (
+                "same-origin".equalsIgnoreCase(request.getHeader("Sec-Fetch-Site")) ||
+                (request.getHeader("Referer") != null && request.getHeader("Host") != null && request.getHeader("Referer").contains(request.getHeader("Host")))
+        );
+
+        if (!isSameOrigin && syncSecretToken != null && !syncSecretToken.isBlank()) {
             String token = headerToken != null ? headerToken : paramToken;
             if (token == null || !syncSecretToken.trim().equals(token.trim())) {
-                log.warn("Unauthorized manual sync attempt.");
+                log.warn("Unauthorized external manual sync attempt.");
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(
                         SyncResultDto.builder()
                                 .success(false)

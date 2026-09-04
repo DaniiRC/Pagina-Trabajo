@@ -151,7 +151,15 @@
 
                 <div class="flex items-center justify-between pt-2 border-t border-[#1a1d2e] text-[11px] text-zinc-500">
                     <span id="sync-duration-label">Tiempo: 0.0s</span>
-                    <button onclick="closeSyncModal()" class="px-4 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs transition-colors">Entendido</button>
+                    <div class="flex items-center gap-2">
+                        <button onclick="triggerSync()" id="sync-modal-refresh-btn" class="px-3 py-1.5 rounded-lg bg-[#0d0f18] hover:bg-[#13162a] text-zinc-300 border border-[#1a1d2e] font-semibold text-xs transition-colors">↻ Actualizar</button>
+                        <button onclick="closeSyncModal()" class="px-4 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs transition-colors">Entendido</button>
+                    </div>
+                </div>
+                <!-- InfoJobs notice -->
+                <div class="mt-1 px-3 py-2 rounded-xl bg-amber-950/20 border border-amber-800/25 text-[10px] text-amber-400/80 flex items-start gap-2">
+                    <span class="shrink-0 mt-0.5">⚠️</span>
+                    <span><strong>InfoJobs</strong> ha cerrado temporalmente el registro de nuevas apps de desarrollador. Tu configuración está perfecta — Adzuna ES, Tecnoempleo y LinkedIn (Google Search) están activos y cubriendo las ofertas en España.</span>
                 </div>
             </div>
 
@@ -229,19 +237,21 @@
                     <span class="font-bold text-white text-sm tracking-tight">TechJobs</span>
                     <span class="hidden sm:inline text-[11px] text-zinc-600 border border-[#1a1d2e] px-2 py-0.5 rounded-md">Agregador Técnico Español</span>
                 </div>
-                <div class="flex items-center gap-3">
+                <div class="flex items-center gap-2.5">
                     <div class="hidden md:flex items-center gap-1.5 text-[11px] text-zinc-500">
                         <span id="server-dot" class="w-1.5 h-1.5 rounded-full bg-zinc-600"></span>
                         <span id="server-status">Verificando...</span>
                     </div>
-                    <button onclick="openSyncModalDirectly()" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#0d0f18] hover:bg-[#13162a] text-zinc-300 border border-[#1a1d2e] text-xs font-semibold transition-all">
-                        <svg class="w-3.5 h-3.5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
-                        <span>Estado Fuentes</span>
-                    </button>
-                    <button id="sync-btn" onclick="triggerSync()" class="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold transition-all shadow-md shadow-indigo-950/40">
-                        <svg id="sync-icon" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
-                        <span id="sync-btn-text">Sincronizar</span>
-                    </button>
+                    <!-- Botón unificado: Sincronizar / Ver estado -->
+                    <div class="relative flex items-center rounded-lg overflow-hidden border border-[#1a1d2e] shadow-md shadow-indigo-950/30">
+                        <button id="sync-btn" onclick="triggerSync()" class="flex items-center gap-1.5 px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold transition-all">
+                            <svg id="sync-icon" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                            <span id="sync-btn-text">Sincronizar</span>
+                        </button>
+                        <button onclick="openSyncModalDirectly()" title="Ver estado de las fuentes" class="px-2 py-1.5 bg-[#0d0f18] hover:bg-[#13162a] text-indigo-400 hover:text-indigo-300 border-l border-[#1a1d2e] transition-all">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+                        </button>
+                    </div>
                 </div>
             </div>
         </header>

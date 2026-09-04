@@ -4,6 +4,7 @@ import com.jobaggregator.personal.dto.JobOfferResponseDto;
 import com.jobaggregator.personal.dto.JobStatsDto;
 import com.jobaggregator.personal.model.*;
 import com.jobaggregator.personal.repository.JobOfferRepository;
+import jakarta.persistence.criteria.Expression;
 import jakarta.persistence.criteria.Join;
 import jakarta.persistence.criteria.JoinType;
 import jakarta.persistence.criteria.Predicate;
@@ -78,14 +79,28 @@ public class JobOfferService {
                 predicates.add(cb.equal(root.get("status"), status));
             }
 
-            // Keyword search
+            // Keyword search – includes location fields so searching "España", "Madrid" etc. works.
+            // We check BOTH the accent-normalized pattern ("%espana%") AND the original lowercase
+            // pattern ("%españa%") to handle databases that preserve 'ñ' in LOWER() (H2, Postgres).
             if (keyword != null && !keyword.trim().isEmpty()) {
-                String pattern = "%" + keyword.trim().toLowerCase() + "%";
-                predicates.add(cb.or(
-                        cb.like(cb.lower(root.get("title")), pattern),
-                        cb.like(cb.lower(root.get("companyName")), pattern),
-                        cb.like(cb.lower(root.get("shortDescription")), pattern)
-                ));
+                String kwNorm = SpanishGeographyService.removeAccents(keyword.trim().toLowerCase());
+                String kwRaw  = keyword.trim().toLowerCase(); // preserves 'ñ', accents, etc.
+
+                List<String> patterns = kwNorm.equals(kwRaw)
+                        ? List.of("%" + kwNorm + "%")
+                        : List.of("%" + kwNorm + "%", "%" + kwRaw + "%");
+
+                List<Predicate> kwPreds = new ArrayList<>();
+                for (String pat : patterns) {
+                    kwPreds.add(cb.like(cb.lower(root.get("title")), pat));
+                    kwPreds.add(cb.like(cb.lower(root.get("companyName")), pat));
+                    kwPreds.add(cb.like(cb.lower(root.get("shortDescription")), pat));
+                    kwPreds.add(cb.like(cb.function("lower", String.class, root.get("location")), pat));
+                    kwPreds.add(cb.like(cb.function("lower", String.class, root.get("country")), pat));
+                    kwPreds.add(cb.like(cb.function("lower", String.class, root.get("provinceOrCity")), pat));
+                    kwPreds.add(cb.like(cb.function("lower", String.class, root.get("autonomousCommunity")), pat));
+                }
+                predicates.add(cb.or(kwPreds.toArray(new Predicate[0])));
             }
 
             // Technology filter
@@ -176,17 +191,20 @@ public class JobOfferService {
                             cb.or(locationSpain.toArray(new Predicate[0]))
                     );
 
-                    // Predicado negativo: country NO es otro país conocido
-                    List<String> otherCountries = List.of(
+                    // Predicado negativo (NULL-safe): excluir SOLO si country está explícitamente
+                    // establecido como un país extranjero conocido.
+                    // cb.notEqual sobre campo NULL → UNKNOWN en SQL → se rechazaba toda oferta sin country.
+                    // Solución: (country IS NULL) OR (country IN spain_values) OR (country NOT IN foreign_list)
+                    List<String> foreignCountries = List.of(
                             "reino unido", "uk", "united kingdom",
                             "alemania", "germany", "deutschland",
                             "francia", "france",
                             "estados unidos", "usa", "united states",
                             "polonia", "poland",
                             "italia", "italy",
-                            "países bajos", "netherlands", "holanda",
+                            "paises bajos", "netherlands", "holanda",
                             "portugal", "brasil", "brazil",
-                            "argentina", "méxico", "mexico",
+                            "argentina", "mexico",
                             "colombia", "chile", "peru",
                             "rumania", "romania",
                             "irlanda", "ireland",
@@ -194,13 +212,20 @@ public class JobOfferService {
                             "noruega", "norway",
                             "dinamarca", "denmark"
                     );
-                    List<Predicate> notOtherPreds = new ArrayList<>();
-                    for (String other : otherCountries) {
-                        notOtherPreds.add(cb.notEqual(cb.lower(root.get("country")), other));
-                    }
-                    Predicate notOtherCountry = cb.and(notOtherPreds.toArray(new Predicate[0]));
 
-                    geoPredicates.add(cb.and(isSpain, notOtherCountry));
+                    // NULL-safe: if country is NULL → we allow (might be Spain based on isSpain check)
+                    // if country is set → it must NOT be in the foreign list
+                    Predicate countryIsNull   = cb.isNull(root.get("country"));
+                    Predicate countryIsSpain  = cb.or(
+                            cb.equal(cb.lower(root.get("country")), "españa"),
+                            cb.equal(cb.lower(root.get("country")), "spain")
+                    );
+                    @SuppressWarnings("unchecked")
+                    Expression<String> lowerCountry = (Expression<String>) cb.lower(root.get("country"));
+                    Predicate countryNotForeign = cb.not(lowerCountry.in(foreignCountries));
+                    Predicate notForeign = cb.or(countryIsNull, countryIsSpain, countryNotForeign);
+
+                    geoPredicates.add(cb.and(isSpain, notForeign));
 
                 } else if ("worldwide".equals(countryNorm) || "internacional".equals(countryNorm) || "global".equals(countryNorm)) {
                     geoPredicates.add(cb.or(
@@ -219,15 +244,22 @@ public class JobOfferService {
                 }
 
             } else if (location != null && !location.trim().isEmpty()) {
-                // Generic location text fallback
-                String locPat = "%" + normalizeForSearch(location) + "%";
-                geoPredicates.add(cb.or(
-                        cb.like(cb.lower(root.get("location")), locPat),
-                        cb.like(cb.lower(root.get("country")), locPat),
-                        cb.like(cb.lower(root.get("autonomousCommunity")), locPat),
-                        cb.like(cb.lower(root.get("provinceOrCity")), locPat)
-                ));
+                // Generic location text fallback – check both normalized and accented patterns
+                String locNorm = normalizeForSearch(location);
+                String locRaw  = location.trim().toLowerCase();
+                List<String> locPats = locNorm.equals(locRaw)
+                        ? List.of("%" + locNorm + "%")
+                        : List.of("%" + locNorm + "%", "%" + locRaw + "%");
+                List<Predicate> locPreds = new ArrayList<>();
+                for (String pat : locPats) {
+                    locPreds.add(cb.like(cb.lower(root.get("location")), pat));
+                    locPreds.add(cb.like(cb.lower(root.get("country")), pat));
+                    locPreds.add(cb.like(cb.lower(root.get("autonomousCommunity")), pat));
+                    locPreds.add(cb.like(cb.lower(root.get("provinceOrCity")), pat));
+                }
+                geoPredicates.add(cb.or(locPreds.toArray(new Predicate[0])));
             }
+
 
             if (!geoPredicates.isEmpty()) {
                 predicates.add(cb.and(geoPredicates.toArray(new Predicate[0])));
