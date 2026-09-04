@@ -40,6 +40,19 @@ public class InfoJobsClient implements JobIngestionClient {
 
     private static final String API_URL = "https://api.infojobs.net/api/1/offer";
 
+    private volatile String lastStatus = "Pendiente de sincronizar";
+
+    @Override
+    public String getDetailedStatus() {
+        if (!enabled) {
+            return "Desactivado en configuración";
+        }
+        if (clientId == null || clientId.isBlank() || clientSecret == null || clientSecret.isBlank()) {
+            return "Sin credenciales: falta INFOJOBS_CLIENT_ID / SECRET en Render";
+        }
+        return lastStatus;
+    }
+
     @Override
     public JobSource getSource() {
         return JobSource.INFOJOBS;
@@ -48,11 +61,13 @@ public class InfoJobsClient implements JobIngestionClient {
     @Override
     public List<JobOffer> fetchJobs() {
         if (!enabled) {
+            lastStatus = "Desactivado en configuración";
             log.info("InfoJobs client disabled in configuration.");
             return Collections.emptyList();
         }
 
         if (clientId == null || clientId.isBlank() || clientSecret == null || clientSecret.isBlank()) {
+            lastStatus = "Sin credenciales: falta INFOJOBS_CLIENT_ID / SECRET en Render";
             log.info("InfoJobs client skipped: INFOJOBS_CLIENT_ID and INFOJOBS_CLIENT_SECRET are not configured.");
             return Collections.emptyList();
         }
@@ -64,8 +79,8 @@ public class InfoJobsClient implements JobIngestionClient {
                 (clientId.trim() + ":" + clientSecret.trim()).getBytes(StandardCharsets.UTF_8)
         );
 
-        // Keywords mapped from study profiles (DAM, DAW, SMR, ASIR...)
-        Map<String, String> studyQueries = studyKeywordMapperService.getAllStudyMappings();
+        // Consultar únicamente los perfiles activos (DAM Junior, prácticas, etc.)
+        Map<String, String> studyQueries = studyKeywordMapperService.getActiveStudyMappings();
 
         for (Map.Entry<String, String> entry : studyQueries.entrySet()) {
             String studyProfile = entry.getKey();
@@ -86,6 +101,14 @@ public class InfoJobsClient implements JobIngestionClient {
                         .header(HttpHeaders.AUTHORIZATION, "Basic " + basicAuthCredentials)
                         .header(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON_VALUE)
                         .retrieve()
+                        .onStatus(status -> status.value() == 401 || status.value() == 403, (req, resp) -> {
+                            lastStatus = "Error de autenticación (" + resp.getStatusCode().value() + "): INFOJOBS_CLIENT_ID o SECRET inválidos en Render";
+                            log.error("InfoJobs API Auth Error {}: Verifica INFOJOBS_CLIENT_ID e INFOJOBS_CLIENT_SECRET", resp.getStatusCode());
+                        })
+                        .onStatus(status -> status.value() == 429, (req, resp) -> {
+                            lastStatus = "Límite de peticiones alcanzado en InfoJobs (429 Rate Limit)";
+                            log.warn("InfoJobs API rate limit reached (429)");
+                        })
                         .body(InfoJobsResponseDto.class);
 
                 if (response == null || response.getItems() == null) {
@@ -112,7 +135,14 @@ public class InfoJobsClient implements JobIngestionClient {
                 break;
             } catch (Exception e) {
                 log.error("Error fetching InfoJobs offers for profile '{}': {}", studyProfile, e.getMessage());
+                if (!lastStatus.contains("Error de autenticación")) {
+                    lastStatus = "Error: " + e.getMessage();
+                }
             }
+        }
+
+        if (!lastStatus.contains("Error")) {
+            lastStatus = results.size() + " ofertas obtenidas con éxito";
         }
 
         log.info("InfoJobs ingestion finished. Total offers retrieved: {}", results.size());

@@ -8,22 +8,21 @@ Diseñado específicamente para desplegarse de forma 100% gratuita y continua en
 
 ## 🌟 Características Principales
 
-- **Consumo 100% Legal de APIs y Feeds Públicos:**
-  - 🟣 **Remotive API:** Búsqueda en categorías `software-dev` y `devops-sysadmin`.
-  - 🟡 **Arbeitnow API:** Ofertas remotas y europeas con extracción de tags y requisitos.
-  - 🟢 **WeWorkRemotely (WWR) RSS:** Lectura de feeds XML en tiempo real para puestos de desarrollo y sistemas.
-- **Normalización Inteligente de Tecnologías (`TechnologyParserService`):**
-  - Detecta y clasifica automáticamente tecnologías clave: *Java, Spring Boot, Kotlin, Swift, Flutter, Linux, Docker, Kubernetes, AWS, Azure, Redes/Networking, SQL, PostgreSQL, Python, etc.*
-- **Deduplicación y Persistencia de Estados:**
-  - Evita ofertas repetidas mediante URLs e identificadores externos únicos.
-  - Preserva el estado marcado por el usuario: `NUEVA`, `VISTA`, `APLICADA` o `DESCARTADA`.
-- **Frontend Moderno en un Único Archivo (`src/main/resources/static/index.html`):**
-  - Servido directamente en la raíz `http://localhost:8080/`.
-  - Diseño Dark Mode con Tailwind CSS, tarjetas interactivas de KPIs, nube de filtros por tecnologías, buscador en vivo con *debounce*, apertura de oferta con auto-marcado a "Vista" y disparo de sincronización manual con feedback visual.
-- **Preparado para Despliegue en Render:**
-  - `Dockerfile` multi-stage optimizado para el plan gratuito de Render (512MB RAM).
-  - Configuración automática de PostgreSQL a partir de `DATABASE_URL`.
-  - Endpoints `/api/ping` y `/api/health` para monitorización keep-alive.
+## 🌟 Fuentes de Empleo Integradas
+
+La aplicación agrega ofertas mediante clientes modulares en `src/main/java/.../client/`:
+
+| Fuente | Tipo de Integración | Requiere Credenciales | Relevancia para España / DAM Junior |
+|---|---|---|---|
+| 🇪🇸 **Tecnoempleo** | RSS XML público oficial | ❌ Ninguna (100% libre) | **Máxima**: Portal técnico líder en España con ofertas directas en Madrid, Barcelona, remoto y provincias. |
+| 🇪🇸 **InfoJobs** | API REST oficial (`/api/1/offer`) | 🔑 `INFOJOBS_CLIENT_ID` y `INFOJOBS_CLIENT_SECRET` | **Máxima**: La mayor bolsa de empleo en España para perfiles junior, graduados de DAM/DAW/FP y prácticas. |
+| 🇪🇸 **Adzuna España** | API REST oficial (`/api/jobs/es/...`) | 🔑 `ADZUNA_APP_ID` y `ADZUNA_APP_KEY` (Free tier 250 req/día) | **Alta**: Agregador masivo con filtros por salario y ubicación española. |
+| 🇪🇸 **LinkedIn Jobs** | Google Custom Search JSON API (`site:es.linkedin.com/jobs`) | 🔑 `GOOGLE_SEARCH_API_KEY` y `GOOGLE_SEARCH_CX` (100 req/día) | **Media/Alta**: Búsqueda legal sin scraping de puestos técnicos en LinkedIn España. |
+| 🌍 **Jobicy** | API REST pública oficial | ❌ Ninguna | **Media**: Ofertas técnicas con filtro geográfico para España y EMEA. |
+| 🇪🇸 **GetManfred** | API REST | ❌ Ninguna (Desactivado por defecto) | **Baja para Junior**: Principalmente roles senior/lead (>40k€). |
+| 🌍 **Remotive** | API REST pública oficial | ❌ Ninguna | **Media**: Empleo remoto internacional (`software-dev`, `devops`). |
+| 🇪🇺 **Arbeitnow** | API REST pública oficial | ❌ Ninguna | **Media**: Empleo técnico en la UE y remoto europeo. |
+| 🌍 **WeWorkRemotely** | Feeds RSS públicos | ❌ Ninguna | **Media**: Empleo remoto técnico internacional. |
 
 ---
 
@@ -102,11 +101,33 @@ El proyecto está 100% configurado para desplegarse en Render de forma gratuita:
    - **Branch:** `main` (o tu rama activa)
    - **Plan:** `Free`
    - **Health Check Path:** `/api/ping`
-4. Variables de Entorno (**Environment Variables**):
-   - `PORT` = `8080`
-   - `SPRING_PROFILES_ACTIVE` = `prod`
-   - `DATABASE_URL` = *(La URL de conexión interna de tu base de datos PostgreSQL en Render)*
-5. Pulsa **"Create Web Service"**.
+4. Variables de Entorno (**Environment Variables**) en Render:
+
+### ⚙️ Guía de Credenciales y Variables de Entorno en Render
+
+Para activar fuentes específicas en Render, ve a tu servicio en Render -> **Environment** y añade las claves deseadas:
+
+#### 1. 🇪🇸 InfoJobs API (Recomendada para perfiles DAM/Junior en España)
+- **Registro:** Regístrate en [developer.infojobs.net](https://developer.infojobs.net).
+- Crea una nueva aplicación (tipo cliente API).
+- Copia tus credenciales e indícalas en Render:
+  - `INFOJOBS_CLIENT_ID`: Tu Client ID asignado.
+  - `INFOJOBS_CLIENT_SECRET`: Tu Client Secret asignado.
+
+#### 2. 🇪🇸 Adzuna España API (250 consultas/día gratuitas)
+- **Registro:** Crea una cuenta en [developer.adzuna.com](https://developer.adzuna.com).
+- Genera tus credenciales de desarrollador para la API de España:
+  - `ADZUNA_APP_ID`: Tu identificador de aplicación.
+  - `ADZUNA_APP_KEY`: Tu clave de aplicación.
+
+#### 3. 🔍 Google Custom Search API para LinkedIn España
+- **Google Cloud:** En [console.cloud.google.com](https://console.cloud.google.com), habilita **Custom Search API** y genera una API Key -> Variable `GOOGLE_SEARCH_API_KEY`.
+- **Buscador Personalizado:** En [programmablesearchengine.google.com](https://programmablesearchengine.google.com), crea un buscador con el sitio `site:es.linkedin.com/jobs` -> Variable `GOOGLE_SEARCH_CX`.
+
+#### 4. 🎛️ Configuración de Perfiles y Seguridad
+- `JOBS_ACTIVE_STUDIES`: Perfiles activos separados por coma. Por defecto: `DAM,DAM_JAVA,DAM_MOBILE,PRACTICAS_BECA`. Permite personalizar qué buscas sin redesplegar.
+- `SYNC_SECRET_TOKEN`: Token opcional para proteger `POST /api/sync`. Si se define, requiere la cabecera `X-Sync-Token`.
+- `CORS_ALLOWED_ORIGINS`: Dominios permitidos separados por coma (por defecto `http://localhost:*,https://*.onrender.com`).
 
 ---
 

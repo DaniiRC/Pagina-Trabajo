@@ -39,7 +39,21 @@ public class LinkedInGoogleSearchClient implements JobIngestionClient {
     private boolean enabled;
 
     private static final String GOOGLE_SEARCH_URL = "https://customsearch.googleapis.com/customsearch/v1";
-    private static final String LINKEDIN_GUEST_API = "https://www.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search";
+
+    private volatile String lastStatus = "Pendiente de sincronizar";
+
+    @Override
+    public String getDetailedStatus() {
+        if (!enabled) {
+            return "Desactivado en configuración";
+        }
+        boolean hasGoogleCredentials = googleApiKey != null && !googleApiKey.isBlank()
+                && googleSearchEngineId != null && !googleSearchEngineId.isBlank();
+        if (!hasGoogleCredentials) {
+            return "Sin credenciales: falta GOOGLE_SEARCH_API_KEY / CX en Render";
+        }
+        return lastStatus;
+    }
 
     @Override
     public JobSource getSource() {
@@ -49,6 +63,7 @@ public class LinkedInGoogleSearchClient implements JobIngestionClient {
     @Override
     public List<JobOffer> fetchJobs() {
         if (!enabled) {
+            lastStatus = "Desactivado en configuración";
             log.info("LinkedIn/GoogleSearch client is disabled in configuration.");
             return Collections.emptyList();
         }
@@ -60,11 +75,12 @@ public class LinkedInGoogleSearchClient implements JobIngestionClient {
                 && googleSearchEngineId != null && !googleSearchEngineId.isBlank();
 
         if (!hasGoogleCredentials) {
+            lastStatus = "Sin credenciales: falta GOOGLE_SEARCH_API_KEY / CX en Render";
             log.info("LinkedIn client: GOOGLE_SEARCH_API_KEY and GOOGLE_SEARCH_CX are not set in environment. Skipping LinkedIn to prevent IP blocking. Set them in Render to enable.");
             return Collections.emptyList();
         }
 
-        Map<String, String> studyProfiles = studyKeywordMapperService.getAllStudyMappings();
+        Map<String, String> studyProfiles = studyKeywordMapperService.getActiveStudyMappings();
 
         for (Map.Entry<String, String> entry : studyProfiles.entrySet()) {
             String studyName = entry.getKey();
@@ -81,12 +97,13 @@ public class LinkedInGoogleSearchClient implements JobIngestionClient {
             }
         }
 
+        lastStatus = results.size() + " ofertas obtenidas vía Google Custom Search";
         log.info("LinkedIn ingestion finished. Total offers retrieved: {}", results.size());
         return results;
     }
 
     /**
-     * Modalidad 1: Búsqueda oficial mediante Google Custom Search API
+     * Modalidad oficial: Búsqueda mediante Google Custom Search API
      * Query: site:es.linkedin.com/jobs <keywords> España
      */
     private void fetchViaGoogleCustomSearch(String studyName, String keywords, List<JobOffer> results, Set<String> seenUrls) {
@@ -128,68 +145,6 @@ public class LinkedInGoogleSearchClient implements JobIngestionClient {
             }
         } catch (Exception e) {
             log.error("Google Custom Search API error for '{}': {}", studyName, e.getMessage());
-        }
-    }
-
-    /**
-     * Modalidad 2: Consulta directa a LinkedIn Jobs en caso de que aún no se hayan configurado
-     * las claves de Google Custom Search en Render.
-     */
-    private boolean fetchViaLinkedInGuestApi(String studyName, String keywords, List<JobOffer> results, Set<String> seenUrls) {
-        log.info("Fetching LinkedIn guest jobs for profile '{}' with keywords: '{}'", studyName, keywords);
-
-        try {
-            String uri = UriComponentsBuilder.fromHttpUrl(LINKEDIN_GUEST_API)
-                    .queryParam("keywords", keywords)
-                    .queryParam("location", "España")
-                    .queryParam("start", 0)
-                    .build()
-                    .toUriString();
-
-            String html = restClient.get()
-                    .uri(uri)
-                    .header(HttpHeaders.USER_AGENT, "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36")
-                    .header(HttpHeaders.ACCEPT_LANGUAGE, "es-ES,es;q=0.9")
-                    .retrieve()
-                    .body(String.class);
-
-            if (html == null || html.isBlank()) {
-                return true;
-            }
-
-            // Parse job cards from LinkedIn public HTML response
-            Pattern cardPattern = Pattern.compile(
-                    "<a class=\"base-card__full-link[^\"]*\" href=\"([^\"]+)\"[^>]*>\\s*<span class=\"sr-only\">([^<]+)</span>.*?<h4 class=\"base-search-card__subtitle\">\\s*<a[^>]*>([^<]+)</a>.*?<span class=\"job-search-card__location\">\\s*([^<]+)</span>",
-                    Pattern.DOTALL
-            );
-
-            Matcher matcher = cardPattern.matcher(html);
-            int count = 0;
-            while (matcher.find() && count < 15) {
-                String rawLink = matcher.group(1).trim();
-                String rawTitle = matcher.group(2).trim();
-                String company = matcher.group(3).trim();
-                String location = matcher.group(4).trim();
-
-                // Clean LinkedIn redirect URLs
-                String link = rawLink.contains("?") ? rawLink.substring(0, rawLink.indexOf("?")) : rawLink;
-
-                if (seenUrls.contains(link)) {
-                    continue;
-                }
-                seenUrls.add(link);
-                count++;
-
-                JobOffer offer = buildLinkedInJobOffer(link, rawTitle, company, location, studyName);
-                if (offer != null) {
-                    results.add(offer);
-                }
-            }
-            return true;
-
-        } catch (Exception e) {
-            log.warn("LinkedIn guest endpoint response for profile '{}': {}", studyName, e.getMessage());
-            return false;
         }
     }
 

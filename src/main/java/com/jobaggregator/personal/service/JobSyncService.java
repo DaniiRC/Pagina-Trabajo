@@ -139,10 +139,13 @@ public class JobSyncService {
                     List<JobOffer> jobs = client.fetchJobs();
                     int count = jobs != null ? jobs.size() : 0;
                     fetchedBySource.put(name, count);
-                    if (count > 0) {
+                    String detailed = client.getDetailedStatus();
+                    if (detailed != null && !detailed.isBlank()) {
+                        sourceStatus.put(name, detailed);
+                    } else if (count > 0) {
                         sourceStatus.put(name, count + " ofertas encontradas");
                     } else {
-                        sourceStatus.put(name, "0 ofertas o cliente no configurado");
+                        sourceStatus.put(name, "0 ofertas encontradas");
                     }
                     return jobs != null ? jobs : Collections.emptyList();
                 } catch (Exception e) {

@@ -37,6 +37,16 @@ public class TecnoempleoRssClient implements JobIngestionClient {
     @Value("${jobs.tecnoempleo.url:https://www.tecnoempleo.com/rss.xml}")
     private String primaryRssUrl;
 
+    private volatile String lastStatus = "Pendiente de sincronizar";
+
+    @Override
+    public String getDetailedStatus() {
+        if (!enabled) {
+            return "Desactivado en configuración";
+        }
+        return lastStatus;
+    }
+
     @Override
     public JobSource getSource() {
         return JobSource.TECNOEMPLEO;
@@ -45,6 +55,7 @@ public class TecnoempleoRssClient implements JobIngestionClient {
     @Override
     public List<JobOffer> fetchJobs() {
         if (!enabled) {
+            lastStatus = "Desactivado en configuración";
             log.info("Tecnoempleo RSS client is disabled in configuration.");
             return Collections.emptyList();
         }
@@ -107,6 +118,7 @@ public class TecnoempleoRssClient implements JobIngestionClient {
             }
         }
 
+        lastStatus = results.size() + " ofertas obtenidas (RSS España)";
         log.info("Tecnoempleo ingestion finished. Total offers retrieved: {}", results.size());
         return results;
     }

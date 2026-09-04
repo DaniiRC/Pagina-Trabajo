@@ -21,8 +21,49 @@ public class SyncController {
 
     private final JobSyncService jobSyncService;
 
+    @org.springframework.beans.factory.annotation.Value("${jobs.sync.secret.token:${SYNC_SECRET_TOKEN:}}")
+    private String syncSecretToken;
+
+    private final java.util.concurrent.atomic.AtomicLong lastSyncTimestamp = new java.util.concurrent.atomic.AtomicLong(0);
+    private static final long COOLDOWN_MILLIS = 30_000; // 30 segundos entre sincronizaciones manuales
+
     @PostMapping
-    public ResponseEntity<SyncResultDto> triggerManualSync() {
+    public ResponseEntity<SyncResultDto> triggerManualSync(
+            @org.springframework.web.bind.annotation.RequestHeader(value = "X-Sync-Token", required = false) String headerToken,
+            @org.springframework.web.bind.annotation.RequestParam(value = "token", required = false) String paramToken) {
+
+        // 1. Verificación de token si está configurado en variables de entorno
+        if (syncSecretToken != null && !syncSecretToken.isBlank()) {
+            String token = headerToken != null ? headerToken : paramToken;
+            if (token == null || !syncSecretToken.trim().equals(token.trim())) {
+                log.warn("Unauthorized manual sync attempt.");
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(
+                        SyncResultDto.builder()
+                                .success(false)
+                                .message("No autorizado: Token de sincronización inválido o ausente.")
+                                .timestamp(LocalDateTime.now())
+                                .build()
+                );
+            }
+        }
+
+        // 2. Protección de Rate-Limit / Cooldown
+        long now = System.currentTimeMillis();
+        long last = lastSyncTimestamp.get();
+        if (now - last < COOLDOWN_MILLIS) {
+            long remainingSecs = (COOLDOWN_MILLIS - (now - last)) / 1000;
+            log.warn("Sync rate limit hit. Remaining cooldown: {} seconds.", remainingSecs);
+            return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).body(
+                    SyncResultDto.builder()
+                            .success(false)
+                            .message("Sincronización en curso o ejecutada recientemente. Espera " + remainingSecs + "s para volver a sincronizar.")
+                            .timestamp(LocalDateTime.now())
+                            .build()
+            );
+        }
+
+        lastSyncTimestamp.set(now);
+
         try {
             SyncResultDto result = jobSyncService.syncAll();
             return ResponseEntity.ok(result);

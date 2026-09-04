@@ -48,6 +48,19 @@ public class AdzunaClient implements JobIngestionClient {
             "ciberseguridad redes informatica"
     );
 
+    private volatile String lastStatus = "Pendiente de sincronizar";
+
+    @Override
+    public String getDetailedStatus() {
+        if (!enabled) {
+            return "Desactivado en configuración";
+        }
+        if (appId == null || appId.isBlank() || appKey == null || appKey.isBlank()) {
+            return "Sin credenciales: falta ADZUNA_APP_ID / KEY en Render";
+        }
+        return lastStatus;
+    }
+
     @Override
     public JobSource getSource() {
         return JobSource.ADZUNA;
@@ -56,10 +69,12 @@ public class AdzunaClient implements JobIngestionClient {
     @Override
     public List<JobOffer> fetchJobs() {
         if (!enabled) {
+            lastStatus = "Desactivado en configuración";
             log.info("Adzuna client disabled.");
             return Collections.emptyList();
         }
         if (appId == null || appId.isBlank() || appKey == null || appKey.isBlank()) {
+            lastStatus = "Sin credenciales: falta ADZUNA_APP_ID / KEY en Render";
             log.info("Adzuna disabled: ADZUNA_APP_ID / ADZUNA_APP_KEY not configured. Register free at https://developer.adzuna.com");
             return Collections.emptyList();
         }
@@ -105,6 +120,7 @@ public class AdzunaClient implements JobIngestionClient {
             }
         }
 
+        lastStatus = results.size() + " ofertas obtenidas en España";
         log.info("Adzuna ingestion finished. Total: {}", results.size());
         return results;
     }

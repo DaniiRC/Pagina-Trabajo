@@ -10,4 +10,8 @@ public interface JobIngestionClient {
     JobSource getSource();
 
     List<JobOffer> fetchJobs();
+
+    default String getDetailedStatus() {
+        return null;
+    }
 }
